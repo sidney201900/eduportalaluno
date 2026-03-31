@@ -76,7 +76,7 @@
 
   --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #0891b2 100%);
   --gradient-dark: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  --gradient-sidebar: linear-gradient(180deg, #2e3b55 0%, #1e293b 50%, #0f172a 100%);
+  --gradient-sidebar: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   --gradient-login: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
   --gradient-warning: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(234,179,8,0.05) 100%);
 

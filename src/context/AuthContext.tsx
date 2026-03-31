@@ -6,6 +6,7 @@ interface AuthContextType {
   student: Student | null;
   token: string | null;
   isLoading: boolean;
+  schoolLogo: string | null;
   login: (enrollmentNumber: string, password: string) => Promise<void>;
   logout: () => void;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [student, setStudent] = useState<Student | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
 
   const fetchStudentData = useCallback(async (authToken: string) => {
     try {
@@ -36,6 +38,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedToken = localStorage.getItem('portal_token');
     const savedUser = localStorage.getItem('portal_user');
+    
+    // Fetch School Logo for the portal
+    fetch('/api/portal/escola')
+      .then(res => res.json())
+      .then(data => {
+        if (data.logo) {
+          setSchoolLogo(data.logo);
+          // Set favicon dynamically
+          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = data.logo;
+        }
+      })
+      .catch(() => {});
+
     if (savedToken && savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
@@ -95,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, student, token, isLoading, login, logout, updatePassword }}>
+    <AuthContext.Provider value={{ user, student, token, isLoading, schoolLogo, login, logout, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );
