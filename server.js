@@ -237,6 +237,55 @@ app.get('/api/portal/frequencia', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/portal/frequencia/justificar/:id
+app.post('/api/portal/frequencia/justificar/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { justification } = req.body;
+    
+    if (!justification || justification.trim() === '') {
+      return res.status(400).json({ error: 'A justificativa é obrigatória' });
+    }
+
+    const { data: schoolRow, error: fetchError } = await supabase
+      .from('school_data')
+      .select('data')
+      .eq('id', 1)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const schoolData = schoolRow?.data || {};
+    const attendance = schoolData.attendance || [];
+    
+    const recordIndex = attendance.findIndex(a => a.id === id && a.studentId === req.user.studentId);
+    
+    if (recordIndex === -1) {
+      return res.status(404).json({ error: 'Registro de frequência não encontrado' });
+    }
+    
+    const isPresent = attendance[recordIndex].type === 'presence' || attendance[recordIndex].verified;
+    if (isPresent) {
+      return res.status(400).json({ error: 'Não é possível justificar uma presença' });
+    }
+    
+    attendance[recordIndex] = { ...attendance[recordIndex], justification: justification.trim() };
+    schoolData.attendance = attendance;
+    
+    const { error: updateError } = await supabase
+      .from('school_data')
+      .update({ data: schoolData })
+      .eq('id', 1);
+
+    if (updateError) throw updateError;
+    
+    res.json({ message: 'Justificativa enviada com sucesso', record: attendance[recordIndex] });
+  } catch (err) {
+    console.error('Justificativa error:', err);
+    res.status(500).json({ error: 'Erro interno ao salvar justificativa' });
+  }
+});
+
 // GET /api/portal/contratos
 app.get('/api/portal/contratos', authMiddleware, async (req, res) => {
   try {
