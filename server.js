@@ -314,6 +314,81 @@ app.get('/api/portal/certificados', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/portal/config (Para suportar Supabase Realtime no Frontend)
+app.get('/api/portal/config', (req, res) => {
+  res.json({
+    supabaseUrl: process.env.VITE_SUPABASE_URL,
+    supabaseAnonKey: process.env.VITE_SUPABASE_KEY,
+  });
+});
+
+// GET /api/portal/aulas
+app.get('/api/portal/aulas', authMiddleware, async (req, res) => {
+  try {
+    const { data: aulas, error } = await supabase
+      .from('aulas')
+      .select('*')
+      // Adicionando or para turma_id ou aluno_id se o banco der suporte
+      .or(`aluno_id.eq.${req.user.studentId},aluno_id.is.null`)
+      // Apenas para garantir limite - ou buscar da view dependendo do schema:
+      .order('data', { ascending: true });
+
+    if (error) {
+      console.error('Aulas query error:', error);
+      return res.json({ aulas: [] });
+    }
+
+    // Filtragem de memória extra pro caso de turmas. 
+    // Em produção deveríamos usar classId do aluno também para pegar as aulas regulares da turma
+    res.json({ aulas: aulas || [] });
+  } catch (err) {
+    console.error('Aulas error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// GET /api/portal/notificacoes
+app.get('/api/portal/notificacoes', authMiddleware, async (req, res) => {
+  try {
+    const { data: notificacoes, error } = await supabase
+      .from('notificacoes_aluno')
+      .select('*')
+      .eq('aluno_id', req.user.studentId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Notificacoes query error:', error);
+      return res.json({ notificacoes: [] });
+    }
+
+    res.json({ notificacoes: notificacoes || [] });
+  } catch (err) {
+    console.error('Notificacoes error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// PUT /api/portal/notificacoes/ler/:id
+app.put('/api/portal/notificacoes/ler/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('notificacoes_aluno')
+      .update({ lida: true })
+      .eq('id', id)
+      .eq('aluno_id', req.user.studentId); // segurança: só atualiza se for dele
+
+    if (error) {
+      return res.status(400).json({ error: 'Erro ao marcar como lida' });
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Notificacoes ler error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 // PUT /api/portal/alterar-senha
 app.put('/api/portal/alterar-senha', authMiddleware, async (req, res) => {
   try {

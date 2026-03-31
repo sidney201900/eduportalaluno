@@ -1,13 +1,14 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, CreditCard, BookOpen, CalendarCheck,
+  LayoutDashboard, CreditCard, BookOpen, CalendarCheck, CalendarClock,
   FileText, Award, User, LogOut, GraduationCap, X, Menu
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/minhas-aulas', label: 'Cronograma', icon: CalendarClock },
   { path: '/financeiro', label: 'Financeiro', icon: CreditCard },
   { path: '/notas', label: 'Notas', icon: BookOpen },
   { path: '/frequencia', label: 'Frequência', icon: CalendarCheck },

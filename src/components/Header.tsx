@@ -1,10 +1,12 @@
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Bell, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import Notifications from './Notifications';
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
+  '/minhas-aulas': 'Cronograma',
   '/financeiro': 'Financeiro',
   '/notas': 'Notas & Boletim',
   '/frequencia': 'Frequência',
@@ -64,26 +66,7 @@ export default function Header() {
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        <button
-          id="notifications-btn"
-          style={{
-            width: 38, height: 38, borderRadius: 10,
-            background: 'var(--color-surface-light)', border: '1px solid var(--color-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'var(--color-text-secondary)',
-            transition: 'all 0.2s ease', position: 'relative',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-primary)';
-            e.currentTarget.style.color = 'var(--color-primary-light)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-border)';
-            e.currentTarget.style.color = 'var(--color-text-secondary)';
-          }}
-        >
-          <Bell size={18} />
-        </button>
+        <Notifications />
 
         {student && (
           <div style={{

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CreditCard, CalendarCheck, BookOpen, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
-import type { Payment, Attendance, Class, Course } from '../types';
+import { CreditCard, CalendarCheck, BookOpen, Clock, TrendingUp, AlertTriangle, CalendarClock } from 'lucide-react';
+import type { Payment, Attendance, Class, Course, Aula } from '../types';
 
 interface DashboardData {
   payments: Payment[];
   attendance: Attendance[];
+  aulas: Aula[];
   studentClass: Class | null;
   course: Course | null;
 }
@@ -19,17 +20,20 @@ export default function Dashboard() {
     const fetchAll = async () => {
       try {
         const headers = { Authorization: `Bearer ${token}` };
-        const [finRes, freqRes, meRes] = await Promise.all([
+        const [finRes, freqRes, meRes, aulasRes] = await Promise.all([
           fetch('/api/portal/financeiro', { headers }),
           fetch('/api/portal/frequencia', { headers }),
           fetch('/api/portal/me', { headers }),
+          fetch('/api/portal/aulas', { headers }),
         ]);
         const finData = await finRes.json();
         const freqData = await freqRes.json();
         const meData = await meRes.json();
+        const aulasData = await aulasRes.json();
         setData({
           payments: finData.payments || [],
           attendance: freqData.attendance || [],
+          aulas: aulasData.aulas || [],
           studentClass: meData.class || null,
           course: meData.course || null,
         });
@@ -81,6 +85,32 @@ export default function Dashboard() {
     return 'Boa noite';
   };
 
+  const getNext7DaysReplacements = () => {
+    if (!data?.aulas) return [];
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    const in7Days = new Date(now);
+    in7Days.setDate(in7Days.getDate() + 7);
+    return data.aulas.filter(a => {
+      if (a.status === 'cancelada') return false;
+      const classDate = new Date(a.data + 'T00:00:00');
+      return a.tipo === 'reposicao' && classDate >= now && classDate <= in7Days;
+    });
+  };
+
+  const getNextClass = () => {
+    if (!data?.aulas) return null;
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    const future = data.aulas.filter(a => a.status !== 'cancelada' && new Date(a.data + 'T00:00:00') >= now);
+    return future.sort((a, b) => new Date(a.data || 0).getTime() - new Date(b.data || 0).getTime())[0];
+  };
+
+  const formatTime = (t?: string) => t ? t.substring(0, 5) : '';
+
+  const replacements = getNext7DaysReplacements();
+  const nextClass = getNextClass();
+
   return (
     <div className="page-container">
       {/* Greeting */}
@@ -89,8 +119,23 @@ export default function Dashboard() {
           {greeting()}, <span className="gradient-text">{student?.name.split(' ')[0]}</span>! 👋
         </h1>
         <p className="page-subtitle">
-          Aqui está um resumo da sua vida acadêmica
+          Aqui está um resumo da sua vida acadêmica.
         </p>
+
+        {replacements.map(rep => (
+          <div key={rep.id} className="glass-card animate-fade-in" style={{
+            marginTop: '1.25rem', padding: '1rem',
+            background: 'var(--bg-success-alpha)', border: '1px solid var(--border-success-alpha)',
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            color: 'var(--color-success)'
+          }}>
+            <CalendarClock size={20} />
+            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
+              🗓️ <strong>Aviso:</strong> Você tem uma reposição agendada para o dia <strong>{formatDate(rep.data || '')}</strong>
+              {rep.horario_inicio ? ` às ${formatTime(rep.horario_inicio)}` : ''}.
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Cards Grid */}
@@ -126,6 +171,48 @@ export default function Dashboard() {
             <p style={{ fontSize: '0.75rem', color: 'var(--color-accent)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: 4 }}>
               <Clock size={14} /> {data.studentClass.schedule}
             </p>
+          )}
+        </div>
+
+        {/* Próxima Aula Card */}
+        <div className="glass-card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              background: 'var(--bg-primary-alpha)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <CalendarClock size={22} color="var(--color-primary-light)" />
+            </div>
+            <div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                PRÓXIMA AULA
+              </p>
+            </div>
+          </div>
+          {nextClass ? (
+            <>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2 }}>
+                {nextClass.disciplina_nome || 'Aula Regular'}
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
+                {formatDate(nextClass.data || '')}
+              </p>
+              {(nextClass.horario_inicio || nextClass.horario_fim) && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-accent)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Clock size={14} /> {formatTime(nextClass.horario_inicio)} {nextClass.horario_fim && `às ${formatTime(nextClass.horario_fim)}`}
+                </p>
+              )}
+            </>
+          ) : (
+             <>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                Nenhuma aula
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
+                Você não possui próximas aulas
+              </p>
+             </>
           )}
         </div>
 

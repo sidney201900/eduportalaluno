@@ -129,3 +129,26 @@ export interface AuthUser {
   enrollmentNumber: string;
   name: string;
 }
+
+export interface Aula {
+  id: string | number;
+  turma_id?: string | number;
+  aluno_id?: string | number;
+  data?: string;
+  data_da_original?: string;
+  horario_inicio?: string;
+  horario_fim?: string;
+  motivo?: string;
+  status?: 'agendada' | 'cancelada' | 'realizada' | string;
+  tipo?: 'regular' | 'reposicao' | string;
+  disciplina_nome?: string;
+}
+
+export interface Notificacao {
+  id: string | number;
+  aluno_id: string | number;
+  mensagem: string;
+  lida: boolean;
+  tipo: 'cancelamento' | 'reposicao' | 'aviso' | string;
+  created_at?: string;
+}

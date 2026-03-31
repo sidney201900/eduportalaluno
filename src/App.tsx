@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import MinhasAulas from './pages/MinhasAulas';
 import Financeiro from './pages/Financeiro';
 import Notas from './pages/Notas';
 import Frequencia from './pages/Frequencia';
@@ -21,6 +22,7 @@ function AppLayout() {
         <main style={{ flex: 1, overflow: 'auto' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/minhas-aulas" element={<MinhasAulas />} />
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/notas" element={<Notas />} />
             <Route path="/frequencia" element={<Frequencia />} />
