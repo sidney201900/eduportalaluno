@@ -1,0 +1,337 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'portal-aluno-secret-dev';
+
+// Supabase Client
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ VITE_SUPABASE_URL and VITE_SUPABASE_KEY are required');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// ===== Helper: Get school data =====
+async function getSchoolData() {
+  const { data, error } = await supabase
+    .from('school_data')
+    .select('data')
+    .eq('id', 1)
+    .single();
+
+  if (error) throw new Error('Erro ao buscar dados da escola: ' + error.message);
+  return data?.data || {};
+}
+
+// ===== Auth Middleware =====
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Token inválido ou expirado' });
+  }
+}
+
+// ===================================================
+// PUBLIC ROUTES
+// ===================================================
+
+// POST /api/portal/login
+app.post('/api/portal/login', async (req, res) => {
+  try {
+    const { enrollmentNumber, password } = req.body;
+    if (!enrollmentNumber || !password) {
+      return res.status(400).json({ error: 'Matrícula e senha são obrigatórios' });
+    }
+
+    const schoolData = await getSchoolData();
+    const students = schoolData.students || [];
+
+    const student = students.find(
+      (s) => s.enrollmentNumber && s.enrollmentNumber.toLowerCase() === enrollmentNumber.toLowerCase()
+    );
+
+    if (!student) {
+      return res.status(401).json({ error: 'Matrícula não encontrada' });
+    }
+
+    // Check password
+    const expectedPassword = student.portalPassword || (student.cpf ? student.cpf.replace(/\D/g, '').substring(0, 6) : '');
+    if (password !== expectedPassword) {
+      return res.status(401).json({ error: 'Senha incorreta' });
+    }
+
+    if (student.status !== 'active') {
+      return res.status(403).json({ error: 'Sua matrícula está inativa. Entre em contato com a secretaria.' });
+    }
+
+    // Generate JWT
+    const tokenPayload = {
+      studentId: student.id,
+      enrollmentNumber: student.enrollmentNumber,
+      name: student.name,
+    };
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+
+    // Find class and course
+    const studentClass = (schoolData.classes || []).find((c) => c.id === student.classId) || null;
+    const course = studentClass
+      ? (schoolData.courses || []).find((c) => c.id === studentClass.courseId) || null
+      : null;
+
+    res.json({
+      token,
+      user: tokenPayload,
+      student: {
+        ...student,
+        portalPassword: undefined, // Don't expose password
+      },
+      class: studentClass,
+      course,
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/portal/escola
+app.get('/api/portal/escola', async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    res.json({
+      name: schoolData.profile?.name || 'Escola',
+      logo: schoolData.logo || null,
+      profile: schoolData.profile || null,
+    });
+  } catch (err) {
+    console.error('Escola error:', err);
+    res.status(500).json({ error: 'Erro ao buscar dados da escola' });
+  }
+});
+
+// ===================================================
+// PROTECTED ROUTES
+// ===================================================
+
+// GET /api/portal/me
+app.get('/api/portal/me', authMiddleware, async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    const student = (schoolData.students || []).find((s) => s.id === req.user.studentId);
+    if (!student) {
+      return res.status(404).json({ error: 'Aluno não encontrado' });
+    }
+
+    const studentClass = (schoolData.classes || []).find((c) => c.id === student.classId) || null;
+    const course = studentClass
+      ? (schoolData.courses || []).find((c) => c.id === studentClass.courseId) || null
+      : null;
+
+    res.json({
+      student: { ...student, portalPassword: undefined },
+      class: studentClass,
+      course,
+    });
+  } catch (err) {
+    console.error('Me error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// GET /api/portal/financeiro
+app.get('/api/portal/financeiro', authMiddleware, async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    const payments = (schoolData.payments || []).filter(
+      (p) => p.studentId === req.user.studentId
+    );
+    res.json({ payments });
+  } catch (err) {
+    console.error('Financeiro error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// GET /api/portal/boletos
+app.get('/api/portal/boletos', authMiddleware, async (req, res) => {
+  try {
+    const { data: boletos, error } = await supabase
+      .from('alunos_cobrancas')
+      .select('*')
+      .eq('aluno_id', req.user.studentId)
+      .order('vencimento', { ascending: true });
+
+    if (error) {
+      console.error('Boletos query error:', error);
+      return res.json({ boletos: [] });
+    }
+
+    res.json({ boletos: boletos || [] });
+  } catch (err) {
+    console.error('Boletos error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// GET /api/portal/notas
+app.get('/api/portal/notas', authMiddleware, async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    const grades = (schoolData.grades || []).filter(
+      (g) => g.studentId === req.user.studentId
+    );
+    const subjects = schoolData.subjects || [];
+
+    // Enrich grades with subject name
+    const enrichedGrades = grades.map((g) => {
+      const subject = subjects.find((s) => s.id === g.subjectId);
+      return { ...g, subjectName: subject?.name || 'Disciplina desconhecida' };
+    });
+
+    // Collect unique periods
+    const periods = [...new Set(grades.map((g) => g.period))].sort();
+
+    res.json({ grades: enrichedGrades, periods });
+  } catch (err) {
+    console.error('Notas error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// GET /api/portal/frequencia
+app.get('/api/portal/frequencia', authMiddleware, async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    const attendance = (schoolData.attendance || []).filter(
+      (a) => a.studentId === req.user.studentId
+    );
+    res.json({ attendance });
+  } catch (err) {
+    console.error('Frequencia error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// GET /api/portal/contratos
+app.get('/api/portal/contratos', authMiddleware, async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    const contracts = (schoolData.contracts || []).filter(
+      (c) => c.studentId === req.user.studentId
+    );
+    res.json({ contracts });
+  } catch (err) {
+    console.error('Contratos error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// GET /api/portal/certificados
+app.get('/api/portal/certificados', authMiddleware, async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    const certificates = (schoolData.certificates || []).filter(
+      (c) => c.studentId === req.user.studentId
+    );
+    res.json({ certificates });
+  } catch (err) {
+    console.error('Certificados error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// PUT /api/portal/alterar-senha
+app.put('/api/portal/alterar-senha', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórios' });
+    }
+
+    if (newPassword.length < 4) {
+      return res.status(400).json({ error: 'A nova senha deve ter pelo menos 4 caracteres' });
+    }
+
+    // Get full data
+    const { data: schoolRow, error: fetchError } = await supabase
+      .from('school_data')
+      .select('data')
+      .eq('id', 1)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const schoolData = schoolRow?.data || {};
+    const students = schoolData.students || [];
+    const studentIndex = students.findIndex((s) => s.id === req.user.studentId);
+
+    if (studentIndex === -1) {
+      return res.status(404).json({ error: 'Aluno não encontrado' });
+    }
+
+    const student = students[studentIndex];
+    const expectedPassword = student.portalPassword || (student.cpf ? student.cpf.replace(/\D/g, '').substring(0, 6) : '');
+
+    if (currentPassword !== expectedPassword) {
+      return res.status(401).json({ error: 'Senha atual incorreta' });
+    }
+
+    // Update password
+    students[studentIndex] = { ...student, portalPassword: newPassword };
+    schoolData.students = students;
+
+    const { error: updateError } = await supabase
+      .from('school_data')
+      .update({ data: schoolData })
+      .eq('id', 1);
+
+    if (updateError) throw updateError;
+
+    res.json({ message: 'Senha alterada com sucesso' });
+  } catch (err) {
+    console.error('Alterar senha error:', err);
+    res.status(500).json({ error: 'Erro ao alterar senha' });
+  }
+});
+
+// ===================================================
+// SERVE FRONTEND (Production)
+// ===================================================
+const distPath = path.join(__dirname, 'dist');
+app.use(express.static(distPath));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
+// ===================================================
+// START SERVER
+// ===================================================
+app.listen(PORT, () => {
+  console.log(`🚀 Portal do Aluno rodando na porta ${PORT}`);
+  console.log(`📡 Supabase: ${supabaseUrl}`);
+});

@@ -1,0 +1,163 @@
+import { useEffect, useState, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { FileText, Eye, Printer, X } from 'lucide-react';
+import type { Contract } from '../types';
+
+export default function Contratos() {
+  const { token } = useAuth();
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/portal/contratos', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setContracts(data.contracts || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (token) fetchData();
+  }, [token]);
+
+  const handlePrint = () => {
+    if (!viewingContract) return;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head><title>${viewingContract.title}</title>
+          <style>body { font-family: 'Inter', sans-serif; padding: 2rem; color: #1a1a1a; line-height: 1.6; }</style>
+          </head>
+          <body>${viewingContract.content}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  if (loading) {
+    return (
+      <div className="page-container">
+        <div className="skeleton" style={{ width: 200, height: 32, marginBottom: 24 }} />
+        <div className="skeleton" style={{ width: '100%', height: 200, borderRadius: 16 }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-container">
+      <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
+        <h1 className="page-title">Contratos</h1>
+        <p className="page-subtitle">Seus contratos com a instituição</p>
+      </div>
+
+      {contracts.length === 0 ? (
+        <div className="glass-card animate-fade-in" style={{
+          padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)',
+        }}>
+          <FileText size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+          <p>Nenhum contrato encontrado</p>
+        </div>
+      ) : (
+        <div className="stagger-children" style={{
+          display: 'grid', gap: '1rem',
+        }}>
+          {contracts.map(contract => (
+            <div key={contract.id} className="glass-card" style={{
+              padding: '1.5rem', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 12,
+                  background: 'rgba(99,102,241,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <FileText size={24} color="#818cf8" />
+                </div>
+                <div>
+                  <h3 style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{contract.title}</h3>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                    Emitido em {formatDate(contract.createdAt)}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => setViewingContract(contract)}
+                  style={{ fontSize: '0.8125rem' }}
+                >
+                  <Eye size={16} /> Visualizar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {viewingContract && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2000, padding: '1rem',
+        }}
+          onClick={() => setViewingContract(null)}
+        >
+          <div className="glass-card animate-scale-in" style={{
+            width: '100%', maxWidth: 800, maxHeight: '90vh',
+            display: 'flex', flexDirection: 'column',
+          }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--glass-border)',
+            }}>
+              <h3 style={{ fontWeight: 600 }}>{viewingContract.title}</h3>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn-secondary" onClick={handlePrint} style={{ fontSize: '0.8125rem' }}>
+                  <Printer size={16} /> Imprimir
+                </button>
+                <button
+                  onClick={() => setViewingContract(null)}
+                  style={{
+                    width: 36, height: 36, borderRadius: 10, border: 'none',
+                    background: 'var(--color-surface-lighter)', color: 'var(--color-text)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div
+              ref={printRef}
+              style={{
+                padding: '1.5rem', overflow: 'auto', flex: 1,
+                fontSize: '0.875rem', lineHeight: 1.7,
+                color: 'var(--color-text-secondary)',
+              }}
+              dangerouslySetInnerHTML={{ __html: viewingContract.content }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
