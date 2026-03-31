@@ -48,7 +48,7 @@ export default function Sidebar() {
         <div
           onClick={() => setMobileOpen(false)}
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            position: 'fixed', inset: 0, background: 'var(--overlay-bg)',
             zIndex: 1099, display: 'block',
           }}
         />
@@ -59,7 +59,7 @@ export default function Sidebar() {
         style={{
           width: 280,
           minHeight: '100vh',
-          background: 'linear-gradient(180deg, #0c1222 0%, #131b2e 50%, #0f172a 100%)',
+          background: 'var(--gradient-sidebar)',
           borderRight: '1px solid var(--glass-border)',
           display: 'flex',
           flexDirection: 'column',
@@ -156,7 +156,7 @@ export default function Sidebar() {
                 transition: 'all 0.2s ease',
                 color: isActive ? 'white' : 'var(--color-text-secondary)',
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(6,182,212,0.1) 100%)'
+                  ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, var(--bg-accent-alpha) 100%)'
                   : 'transparent',
                 borderLeft: isActive ? '3px solid var(--color-primary)' : '3px solid transparent',
               })}
@@ -175,7 +175,7 @@ export default function Sidebar() {
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
               padding: '0.75rem 1rem', borderRadius: 12, border: 'none',
-              background: 'rgba(239, 68, 68, 0.1)', color: '#f87171',
+              background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)',
               cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500,
               transition: 'all 0.2s ease', fontFamily: 'Inter, sans-serif',
             }}

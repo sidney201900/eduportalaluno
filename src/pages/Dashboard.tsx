@@ -105,10 +105,10 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
-              background: 'rgba(99,102,241,0.15)',
+              background: 'var(--bg-primary-alpha)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <BookOpen size={22} color="#818cf8" />
+              <BookOpen size={22} color="var(--color-primary-light)" />
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
@@ -134,10 +134,10 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
-              background: overduePayments.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
+              background: overduePayments.length > 0 ? 'var(--bg-danger-alpha)' : 'var(--bg-success-alpha)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <CreditCard size={22} color={overduePayments.length > 0 ? '#f87171' : '#34d399'} />
+              <CreditCard size={22} color={overduePayments.length > 0 ? 'var(--color-danger)' : 'var(--color-success)'} />
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
@@ -166,10 +166,10 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
-              background: frequencyPercent >= 75 ? 'rgba(6,182,212,0.15)' : 'rgba(245,158,11,0.15)',
+              background: frequencyPercent >= 75 ? 'var(--bg-accent-alpha)' : 'var(--bg-warning-alpha)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <CalendarCheck size={22} color={frequencyPercent >= 75 ? '#22d3ee' : '#fbbf24'} />
+              <CalendarCheck size={22} color={frequencyPercent >= 75 ? 'var(--color-accent-light)' : 'var(--color-warning)'} />
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
@@ -201,10 +201,10 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
-              background: 'rgba(245,158,11,0.15)',
+              background: 'var(--bg-warning-alpha)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <TrendingUp size={22} color="#fbbf24" />
+              <TrendingUp size={22} color="var(--color-warning)" />
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>

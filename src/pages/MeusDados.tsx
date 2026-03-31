@@ -66,7 +66,7 @@ export default function MeusDados() {
         background: 'rgba(99,102,241,0.1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <Icon size={18} color="#818cf8" />
+        <Icon size={18} color="var(--color-primary-light)" />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-secondary)', fontWeight: 500, textTransform: 'uppercase' }}>
@@ -137,7 +137,7 @@ export default function MeusDados() {
               fontWeight: 600, fontSize: '0.9375rem', marginBottom: '1rem',
               display: 'flex', alignItems: 'center', gap: '0.5rem',
             }}>
-              <MapPin size={18} color="#818cf8" /> Endereço
+              <MapPin size={18} color="var(--color-primary-light)" /> Endereço
             </h3>
             <div style={{ fontSize: '0.875rem', lineHeight: 1.8, color: 'var(--color-text-secondary)' }}>
               {student.addressStreet ? (
@@ -160,7 +160,7 @@ export default function MeusDados() {
                 fontWeight: 600, fontSize: '0.9375rem', marginBottom: '1rem',
                 display: 'flex', alignItems: 'center', gap: '0.5rem',
               }}>
-                <Shield size={18} color="#818cf8" /> Responsável
+                <Shield size={18} color="var(--color-primary-light)" /> Responsável
               </h3>
               <InfoRow icon={User} label="Nome" value={student.guardianName} />
               <InfoRow icon={CreditCard} label="CPF" value={student.guardianCpf} />
@@ -179,7 +179,7 @@ export default function MeusDados() {
                 fontWeight: 600, fontSize: '0.9375rem',
                 display: 'flex', alignItems: 'center', gap: '0.5rem',
               }}>
-                <Lock size={18} color="#818cf8" /> Segurança
+                <Lock size={18} color="var(--color-primary-light)" /> Segurança
               </h3>
               {!showPasswordForm && (
                 <button
@@ -197,18 +197,18 @@ export default function MeusDados() {
               <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
                 {error && (
                   <div className="animate-fade-in" style={{
-                    background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+                    background: 'var(--bg-danger-alpha)', border: '1px solid var(--border-danger-alpha)',
                     borderRadius: 10, padding: '0.625rem 0.875rem',
-                    color: '#f87171', fontSize: '0.8125rem',
+                    color: 'var(--color-danger)', fontSize: '0.8125rem',
                   }}>
                     {error}
                   </div>
                 )}
                 {success && (
                   <div className="animate-fade-in" style={{
-                    background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
+                    background: 'var(--bg-success-alpha)', border: '1px solid var(--border-success-alpha)',
                     borderRadius: 10, padding: '0.625rem 0.875rem',
-                    color: '#34d399', fontSize: '0.8125rem',
+                    color: 'var(--color-success)', fontSize: '0.8125rem',
                     display: 'flex', alignItems: 'center', gap: 6,
                   }}>
                     <CheckCircle2 size={16} /> {success}

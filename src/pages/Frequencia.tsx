@@ -128,14 +128,14 @@ export default function Frequencia() {
         </div>
 
         <div className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '2rem', fontWeight: 700, color: '#34d399' }}>{presences}</p>
+          <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-success)' }}>{presences}</p>
           <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, marginTop: 4 }}>
             PRESENÇAS
           </p>
         </div>
 
         <div className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '2rem', fontWeight: 700, color: '#f87171' }}>{absences}</p>
+          <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-danger)' }}>{absences}</p>
           <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, marginTop: 4 }}>
             FALTAS
           </p>
@@ -179,11 +179,11 @@ export default function Frequencia() {
                       <td>{formatDate(record.date)}</td>
                       <td>
                         {isPresent ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#34d399' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
                             <CheckCircle2 size={16} /> Presente
                           </span>
                         ) : (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
                             <XCircle size={16} /> Falta
                           </span>
                         )}
@@ -219,7 +219,7 @@ export default function Frequencia() {
       {/* Modal de Justificativa */}
       {justifyingId && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          position: 'fixed', inset: 0, background: 'var(--overlay-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 2000, padding: '1rem',
         }}>
@@ -245,7 +245,7 @@ export default function Frequencia() {
 
             {error && (
               <div style={{
-                background: 'rgba(239,68,68,0.12)', color: '#f87171',
+                background: 'var(--bg-danger-alpha)', color: 'var(--color-danger)',
                 padding: '0.75rem', borderRadius: 8, fontSize: '0.8125rem', marginBottom: '1rem',
               }}>
                 {error}

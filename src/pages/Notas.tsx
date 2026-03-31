@@ -46,9 +46,9 @@ export default function Notas() {
   grades.forEach(g => { subjectNames[g.subjectId] = g.subjectName; });
 
   const getGradeColor = (value: number) => {
-    if (value >= 7) return '#34d399';
-    if (value >= 5) return '#fbbf24';
-    return '#f87171';
+    if (value >= 7) return 'var(--color-success)';
+    if (value >= 5) return 'var(--color-warning)';
+    return 'var(--color-danger)';
   };
 
   return (
@@ -113,7 +113,7 @@ export default function Notas() {
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           width: 48, height: 32, borderRadius: 8,
-                          background: `rgba(${avg >= 7 ? '16,185,129' : avg >= 5 ? '245,158,11' : '239,68,68'}, 0.15)`,
+                          background: avg >= 7 ? 'var(--bg-success-alpha)' : avg >= 5 ? 'var(--bg-warning-alpha)' : 'var(--bg-danger-alpha)',
                           fontWeight: 700, fontSize: '0.9375rem',
                           color: getGradeColor(avg),
                         }}>
@@ -136,15 +136,15 @@ export default function Notas() {
         flexWrap: 'wrap',
       }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#34d399' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--color-success)' }} />
           Aprovado (≥ 7.0)
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fbbf24' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--color-warning)' }} />
           Recuperação (5.0 - 6.9)
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f87171' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--color-danger)' }} />
           Reprovado (&lt; 5.0)
         </span>
       </div>

@@ -108,7 +108,7 @@ export default function Financeiro() {
           <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, marginBottom: '0.5rem' }}>
             TOTAL EM ABERTO
           </p>
-          <p style={{ fontSize: '1.375rem', fontWeight: 700, color: totalPending > 0 ? '#fbbf24' : '#34d399' }}>
+          <p style={{ fontSize: '1.375rem', fontWeight: 700, color: totalPending > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}>
             {formatCurrency(totalPending)}
           </p>
         </div>
@@ -116,7 +116,7 @@ export default function Financeiro() {
           <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, marginBottom: '0.5rem' }}>
             TOTAL PAGO
           </p>
-          <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#34d399' }}>
+          <p style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--color-success)' }}>
             {formatCurrency(totalPaid)}
           </p>
         </div>
@@ -144,7 +144,7 @@ export default function Financeiro() {
               padding: '0.4375rem 0.875rem', borderRadius: 9999,
               border: '1px solid',
               borderColor: filter === f.key ? 'var(--color-primary)' : 'var(--color-border)',
-              background: filter === f.key ? 'rgba(99,102,241,0.15)' : 'transparent',
+              background: filter === f.key ? 'var(--bg-primary-alpha)' : 'transparent',
               color: filter === f.key ? 'var(--color-primary-light)' : 'var(--color-text-secondary)',
               fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer',
               transition: 'all 0.2s ease', fontFamily: 'Inter, sans-serif',

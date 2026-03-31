@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
-import { Bell } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Bell, Moon, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 const pageTitles: Record<string, string> = {
@@ -14,6 +15,7 @@ const pageTitles: Record<string, string> = {
 
 export default function Header() {
   const { student } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const title = pageTitles[location.pathname] || 'Portal do Aluno';
 
@@ -21,7 +23,7 @@ export default function Header() {
     <header style={{
       height: 64,
       borderBottom: '1px solid var(--glass-border)',
-      background: 'rgba(15, 23, 42, 0.9)',
+      background: 'var(--header-bg)',
       backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
@@ -40,6 +42,28 @@ export default function Header() {
       <div style={{
         display: 'flex', alignItems: 'center', gap: '1rem',
       }}>
+        <button
+          onClick={toggleTheme}
+          style={{
+            width: 38, height: 38, borderRadius: 10,
+            background: 'var(--color-surface-light)', border: '1px solid var(--color-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'var(--color-text-secondary)',
+            transition: 'all 0.2s ease', position: 'relative',
+          }}
+          title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-primary)';
+            e.currentTarget.style.color = 'var(--color-primary-light)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-border)';
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          }}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
         <button
           id="notifications-btn"
           style={{

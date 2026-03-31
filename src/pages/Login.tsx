@@ -48,7 +48,7 @@ export default function Login() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0c1222 0%, #1a1040 50%, #0f172a 100%)',
+      background: 'var(--gradient-login)',
       padding: '1rem',
       position: 'relative',
       overflow: 'hidden',
@@ -56,12 +56,12 @@ export default function Login() {
       {/* Background Orbs */}
       <div style={{
         position: 'absolute', width: 500, height: 500, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, var(--bg-primary-alpha) 0%, transparent 70%)',
         top: '-15%', left: '-10%', pointerEvents: 'none',
       }} />
       <div style={{
         position: 'absolute', width: 400, height: 400, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, var(--bg-accent-alpha) 0%, transparent 70%)',
         bottom: '-10%', right: '-5%', pointerEvents: 'none',
       }} />
 
@@ -109,9 +109,9 @@ export default function Login() {
           {/* Error */}
           {error && (
             <div className="animate-fade-in" style={{
-              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+              background: 'var(--bg-danger-alpha)', border: '1px solid var(--border-danger-alpha)',
               borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1.25rem',
-              color: '#f87171', fontSize: '0.8125rem', textAlign: 'center',
+              color: 'var(--color-danger)', fontSize: '0.8125rem', textAlign: 'center',
             }}>
               {error}
             </div>

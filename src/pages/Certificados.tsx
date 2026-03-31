@@ -62,11 +62,11 @@ export default function Certificados() {
             <div key={cert.id} className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
               <div style={{
                 width: 64, height: 64, borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(234,179,8,0.1) 100%)',
+                background: 'linear-gradient(135deg, var(--bg-warning-alpha) 0%, var(--bg-warning-alpha) 100%)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 1rem',
               }}>
-                <Award size={32} color="#fbbf24" />
+                <Award size={32} color="var(--color-warning)" />
               </div>
               <h3 style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.375rem' }}>
                 Certificado

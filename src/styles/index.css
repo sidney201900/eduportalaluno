@@ -5,6 +5,7 @@
    ========================================== */
 
 :root {
+  /* Default Dark Mode Variables */
   --color-primary: #6366f1;
   --color-primary-light: #818cf8;
   --color-primary-dark: #4f46e5;
@@ -19,10 +20,70 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-border: #334155;
+
+  /* Alphas and Complex colors */
+  --bg-primary-alpha: rgba(99, 102, 241, 0.15);
+  --bg-accent-alpha: rgba(6, 182, 212, 0.15);
+  --bg-danger-alpha: rgba(239, 68, 68, 0.15);
+  --bg-success-alpha: rgba(16, 185, 129, 0.15);
+  --bg-warning-alpha: rgba(245, 158, 11, 0.15);
+  --border-danger-alpha: rgba(239, 68, 68, 0.3);
+  --border-success-alpha: rgba(16, 185, 129, 0.3);
+  
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --header-bg: rgba(15, 23, 42, 0.9);
+
   --gradient-primary: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
   --gradient-dark: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  --gradient-sidebar: linear-gradient(180deg, #0c1222 0%, #131b2e 50%, #0f172a 100%);
+  --gradient-login: linear-gradient(135deg, #0c1222 0%, #1a1040 50%, #0f172a 100%);
+  --gradient-warning: linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(234,179,8,0.1) 100%);
+  
   --glass-bg: rgba(30, 41, 59, 0.7);
   --glass-border: rgba(148, 163, 184, 0.1);
+  --table-hover: rgba(99, 102, 241, 0.05);
+  --table-border: rgba(51, 65, 85, 0.5);
+}
+
+:root[data-theme="light"] {
+  /* Light Mode Equivalents */
+  --color-primary: #4f46e5;
+  --color-primary-light: #6366f1;
+  --color-primary-dark: #3730a3;
+  --color-accent: #0891b2;
+  --color-accent-light: #06b6d4;
+  --color-surface: #f8fafc;
+  --color-surface-light: #ffffff;
+  --color-surface-lighter: #f1f5f9;
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-success: #059669;
+  --color-warning: #b45309; 
+  --color-danger: #dc2626;  
+  --color-border: #cbd5e1;
+
+  /* Alphas and Complex colors */
+  --bg-primary-alpha: rgba(79, 70, 229, 0.1);
+  --bg-accent-alpha: rgba(8, 145, 178, 0.1);
+  --bg-danger-alpha: rgba(220, 38, 38, 0.1);
+  --bg-success-alpha: rgba(5, 150, 105, 0.1);
+  --bg-warning-alpha: rgba(180, 83, 9, 0.1);
+  --border-danger-alpha: rgba(220, 38, 38, 0.3);
+  --border-success-alpha: rgba(5, 150, 105, 0.3);
+
+  --overlay-bg: rgba(15, 23, 42, 0.5);
+  --header-bg: rgba(255, 255, 255, 0.9);
+
+  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #0891b2 100%);
+  --gradient-dark: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  --gradient-sidebar: linear-gradient(180deg, #2e3b55 0%, #1e293b 50%, #0f172a 100%);
+  --gradient-login: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
+  --gradient-warning: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(234,179,8,0.05) 100%);
+
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --table-hover: rgba(79, 70, 229, 0.05);
+  --table-border: rgba(203, 213, 225, 0.5);
 }
 
 * {

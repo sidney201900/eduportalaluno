@@ -84,10 +84,10 @@ export default function Contratos() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 12,
-                  background: 'rgba(99,102,241,0.15)',
+                  background: 'var(--bg-primary-alpha)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  <FileText size={24} color="#818cf8" />
+                  <FileText size={24} color="var(--color-primary-light)" />
                 </div>
                 <div>
                   <h3 style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{contract.title}</h3>
@@ -113,7 +113,7 @@ export default function Contratos() {
       {/* Modal */}
       {viewingContract && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          position: 'fixed', inset: 0, background: 'var(--overlay-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 2000, padding: '1rem',
         }}
