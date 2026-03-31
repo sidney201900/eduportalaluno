@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2 } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2, AlertTriangle, ChevronDown } from 'lucide-react';
 import type { Attendance } from '../types';
 
 export default function Frequencia() {
   const { token } = useAuth();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [successMsg, setSuccessMsg] = useState('');
 
   // Modal State
-  const [justifyingId, setJustifyingId] = useState<string | null>(null);
+  const [showJustifyModal, setShowJustifyModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
   const [justificationText, setJustificationText] = useState('');
+  const [justificationFile, setJustificationFile] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,8 +34,39 @@ export default function Frequencia() {
     if (token) fetchData();
   }, [token]);
 
+  const openJustifyModal = (preselectedDate?: string) => {
+    setShowJustifyModal(true);
+    setSelectedDate(preselectedDate || '');
+    setJustificationText('');
+    setJustificationFile(null);
+    setError('');
+    setSuccessMsg('');
+  };
+
+  const closeModal = () => {
+    setShowJustifyModal(false);
+    setSelectedDate('');
+    setJustificationText('');
+    setJustificationFile(null);
+    setError('');
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setJustificationFile(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleJustify = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedDate) {
+      setError('Selecione a data da aula');
+      return;
+    }
     if (!justificationText.trim()) {
       setError('A justificativa é obrigatória');
       return;
@@ -40,15 +74,23 @@ export default function Frequencia() {
     
     setSubmitLoading(true);
     setError('');
+
+    const payload: any = { motivo: justificationText.trim() };
+    if (justificationFile) {
+      payload.arquivo_base64 = justificationFile;
+    }
     
     try {
-      const res = await fetch(`/api/portal/frequencia/justificar/${justifyingId}`, {
+      const res = await fetch('/api/portal/frequencia/justificar', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}` 
         },
-        body: JSON.stringify({ justification: justificationText }),
+        body: JSON.stringify({
+          date: selectedDate,
+          justification: JSON.stringify(payload),
+        }),
       });
       
       if (!res.ok) {
@@ -59,11 +101,15 @@ export default function Frequencia() {
       const { record } = await res.json();
       
       // Update local state
-      setAttendance(prev => prev.map(a => a.id === record.id ? record : a));
+      setAttendance(prev => {
+        const exists = prev.find(a => a.id === record.id);
+        if (exists) return prev.map(a => a.id === record.id ? record : a);
+        return [...prev, record];
+      });
       
-      // Close modal
-      setJustifyingId(null);
-      setJustificationText('');
+      closeModal();
+      setSuccessMsg(`Justificativa enviada com sucesso para o dia ${formatDate(selectedDate)}!`);
+      setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err: any) {
       setError(err.message || 'Erro ao comunicar com o servidor');
     } finally {
@@ -89,19 +135,78 @@ export default function Frequencia() {
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
+  // Absences without justification (for the dropdown)
+  const unjustifiedAbsences = attendance.filter(a => {
+    const isAbsence = a.type === 'absence' || (!a.verified && a.type !== 'presence');
+    return isAbsence && !a.justification;
+  });
+
   const formatDate = (d: string) => {
-    const date = new Date(d);
-    return date.toLocaleDateString('pt-BR', {
-      weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
-    });
+    try {
+      const date = new Date(d.length === 10 ? d + 'T12:00:00' : d);
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return d;
+    }
+  };
+
+  const formatDateFull = (d: string) => {
+    try {
+      const date = new Date(d.length === 10 ? d + 'T12:00:00' : d);
+      return date.toLocaleDateString('pt-BR', {
+        weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+      });
+    } catch {
+      return d;
+    }
+  };
+
+  const parseJustification = (j?: string): string | null => {
+    if (!j) return null;
+    try {
+      const parsed = JSON.parse(j);
+      return parsed.motivo || j;
+    } catch {
+      return j;
+    }
   };
 
   return (
     <div className="page-container">
+      {/* Header with justify button */}
       <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
-        <h1 className="page-title">Frequência</h1>
-        <p className="page-subtitle">Acompanhe sua presença nas aulas</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 className="page-title">Frequência</h1>
+            <p className="page-subtitle">Acompanhe sua presença nas aulas</p>
+          </div>
+
+          {/* Botão principal "Justificar Falta" no topo */}
+          <button
+            className="btn-primary"
+            onClick={() => openJustifyModal()}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.75rem 1.25rem', fontSize: '0.875rem',
+            }}
+          >
+            <AlertTriangle size={18} />
+            Justificar Falta
+          </button>
+        </div>
       </div>
+
+      {/* Success message */}
+      {successMsg && (
+        <div className="animate-fade-in" style={{
+          background: 'var(--bg-success-alpha)', border: '1px solid var(--border-success-alpha)',
+          borderRadius: 12, padding: '1rem', marginBottom: '1rem',
+          color: 'var(--color-success)', fontSize: '0.875rem', fontWeight: 500,
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+        }}>
+          ✅ {successMsg}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="stagger-children" style={{
@@ -171,12 +276,13 @@ export default function Frequencia() {
               <tbody>
                 {sorted.map((record, idx) => {
                   const isPresent = record.type === 'presence' || record.verified;
+                  const justText = parseJustification(record.justification);
                   return (
                     <tr key={record.id} style={{
                       animation: `fadeIn 0.3s ease-out ${idx * 0.03}s forwards`,
                       opacity: 0,
                     }}>
-                      <td>{formatDate(record.date)}</td>
+                      <td>{formatDateFull(record.date)}</td>
                       <td>
                         {isPresent ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
@@ -189,16 +295,24 @@ export default function Frequencia() {
                         )}
                       </td>
                       <td>
-                        {record.justification ? (
+                        {justText ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem' }}>
                             <FileText size={14} color="var(--color-accent)" />
-                            {record.justification}
+                            {justText}
                           </span>
                         ) : !isPresent ? (
                           <button
-                            className="btn-secondary"
-                            onClick={() => { setJustifyingId(record.id); setError(''); }}
-                            style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem' }}
+                            onClick={() => openJustifyModal(record.date.substring(0, 10))}
+                            style={{
+                              fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: 8,
+                              background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem',
+                              fontFamily: 'Inter, sans-serif', fontWeight: 500,
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
                           >
                             <Send size={14} />
                             Justificar Falta
@@ -216,30 +330,38 @@ export default function Frequencia() {
         </div>
       )}
 
-      {/* Modal de Justificativa */}
-      {justifyingId && (
+      {/* ========== MODAL DE JUSTIFICATIVA ========== */}
+      {showJustifyModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'var(--overlay-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 2000, padding: '1rem',
         }}>
           <div className="glass-card animate-scale-in" style={{
-            width: '100%', maxWidth: 450, padding: '1.5rem',
+            width: '100%', maxWidth: 500, padding: '2rem',
             background: 'var(--color-surface)',
           }}>
+            {/* Header */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: '1rem',
+              marginBottom: '1.5rem',
             }}>
-              <h3 style={{ fontWeight: 600 }}>Justificar Falta</h3>
+              <div>
+                <h3 style={{ fontWeight: 700, fontSize: '1.1rem' }}>Justificar Falta</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                  Selecione a data e descreva o motivo
+                </p>
+              </div>
               <button
-                onClick={() => setJustifyingId(null)}
+                onClick={closeModal}
                 style={{
-                  background: 'none', border: 'none', color: 'var(--color-text-secondary)',
-                  cursor: 'pointer',
+                  background: 'var(--color-surface-light)', border: '1px solid var(--glass-border)',
+                  borderRadius: 8, width: 32, height: 32, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--color-text-secondary)',
                 }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
@@ -252,10 +374,43 @@ export default function Frequencia() {
               </div>
             )}
 
-            <form onSubmit={handleJustify} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleJustify} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Data da aula — lista suspensa */}
               <div>
-                <label style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                  Motivo da ausência
+                <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
+                  Data da aula *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    className="input-field"
+                    value={selectedDate}
+                    onChange={e => setSelectedDate(e.target.value)}
+                    style={{
+                      appearance: 'none', paddingRight: '2.5rem',
+                      cursor: 'pointer', width: '100%',
+                    }}
+                  >
+                    <option value="">— Selecione a data da falta —</option>
+                    {unjustifiedAbsences
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map(a => (
+                        <option key={a.id} value={a.date.substring(0, 10)}>
+                          {formatDateFull(a.date)}
+                        </option>
+                      ))
+                    }
+                  </select>
+                  <ChevronDown size={18} style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    pointerEvents: 'none', color: 'var(--color-text-secondary)',
+                  }} />
+                </div>
+              </div>
+
+              {/* Motivo */}
+              <div>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
+                  Motivo da ausência *
                 </label>
                 <textarea
                   className="input-field"
@@ -263,15 +418,35 @@ export default function Frequencia() {
                   placeholder="Descreva o motivo da sua falta (ex: Atestado médico, problema familiar...)"
                   value={justificationText}
                   onChange={e => setJustificationText(e.target.value)}
-                  style={{ resize: 'vertical', marginTop: '0.5rem' }}
+                  style={{ resize: 'vertical' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              {/* Anexo */}
+              <div>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
+                  Anexar documento (opcional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileChange}
+                  className="input-field"
+                  style={{ padding: '0.5rem' }}
+                />
+                {justificationFile && (
+                  <p style={{ fontSize: '0.7rem', color: 'var(--color-success)', marginTop: '0.25rem' }}>
+                    ✅ Arquivo carregado com sucesso
+                  </p>
+                )}
+              </div>
+
+              {/* Botões */}
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '0.5rem' }}>
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => setJustifyingId(null)}
+                  onClick={closeModal}
                   disabled={submitLoading}
                 >
                   Cancelar
@@ -280,9 +455,13 @@ export default function Frequencia() {
                   type="submit"
                   className="btn-primary"
                   disabled={submitLoading}
-                  style={{ minWidth: 100 }}
+                  style={{ minWidth: 120, display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center' }}
                 >
-                  {submitLoading ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : 'Enviar'}
+                  {submitLoading ? (
+                    <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <><Send size={14} /> Enviar</>
+                  )}
                 </button>
               </div>
             </form>

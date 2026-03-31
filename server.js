@@ -237,12 +237,14 @@ app.get('/api/portal/frequencia', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/portal/frequencia/justificar/:id
-app.post('/api/portal/frequencia/justificar/:id', authMiddleware, async (req, res) => {
+// POST /api/portal/frequencia/justificar
+app.post('/api/portal/frequencia/justificar', authMiddleware, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { justification } = req.body;
+    const { date, justification } = req.body;
     
+    if (!date) {
+      return res.status(400).json({ error: 'A data da aula é obrigatória' });
+    }
     if (!justification || justification.trim() === '') {
       return res.status(400).json({ error: 'A justificativa é obrigatória' });
     }
@@ -257,20 +259,51 @@ app.post('/api/portal/frequencia/justificar/:id', authMiddleware, async (req, re
 
     const schoolData = schoolRow?.data || {};
     const attendance = schoolData.attendance || [];
+    const notifications = schoolData.notifications || [];
+    const student = (schoolData.students || []).find(s => s.id === req.user.studentId);
     
-    const recordIndex = attendance.findIndex(a => a.id === id && a.studentId === req.user.studentId);
+    // Try to find existing absence record for this date
+    const dateStr = date.substring(0, 10);
+    let recordIndex = attendance.findIndex(a => 
+      a.studentId === req.user.studentId && 
+      a.date && a.date.substring(0, 10) === dateStr
+    );
     
-    if (recordIndex === -1) {
-      return res.status(404).json({ error: 'Registro de frequência não encontrado' });
+    if (recordIndex !== -1) {
+      // Record exists — check if it's a presence
+      const existing = attendance[recordIndex];
+      if (existing.type === 'presence' || existing.verified) {
+        return res.status(400).json({ error: 'Não é possível justificar uma presença' });
+      }
+      // Update with justification
+      attendance[recordIndex] = { ...existing, justification: justification.trim() };
+    } else {
+      // No attendance record exists — create one as absence with justification
+      const newRecord = {
+        id: `att-just-${Date.now()}`,
+        studentId: req.user.studentId,
+        classId: student?.classId || '',
+        date: dateStr,
+        verified: false,
+        type: 'absence',
+        justification: justification.trim(),
+      };
+      attendance.push(newRecord);
+      recordIndex = attendance.length - 1;
     }
     
-    const isPresent = attendance[recordIndex].type === 'presence' || attendance[recordIndex].verified;
-    if (isPresent) {
-      return res.status(400).json({ error: 'Não é possível justificar uma presença' });
-    }
+    // Create notification for the admin (visible in EduManager)
+    notifications.push({
+      id: `notif-just-${Date.now()}`,
+      studentId: 'admin', // special: for admin visibility
+      title: `Justificativa de Falta — ${student?.name || req.user.name}`,
+      message: `O aluno ${student?.name || req.user.name} (${req.user.enrollmentNumber}) justificou a falta do dia ${new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')}. Motivo: ${justification.trim().substring(0, 100)}${justification.trim().length > 100 ? '...' : ''}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
     
-    attendance[recordIndex] = { ...attendance[recordIndex], justification: justification.trim() };
     schoolData.attendance = attendance;
+    schoolData.notifications = notifications;
     
     const { error: updateError } = await supabase
       .from('school_data')
@@ -279,7 +312,10 @@ app.post('/api/portal/frequencia/justificar/:id', authMiddleware, async (req, re
 
     if (updateError) throw updateError;
     
-    res.json({ message: 'Justificativa enviada com sucesso', record: attendance[recordIndex] });
+    res.json({ 
+      message: 'Justificativa enviada com sucesso', 
+      record: attendance[recordIndex] 
+    });
   } catch (err) {
     console.error('Justificativa error:', err);
     res.status(500).json({ error: 'Erro interno ao salvar justificativa' });
