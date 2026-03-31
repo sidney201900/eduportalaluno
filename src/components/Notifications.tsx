@@ -1,15 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Calendar, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Bell, Check, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { createClient } from '@supabase/supabase-js';
-import type { Notificacao } from '../types';
+import type { Notification as PortalNotification } from '../types';
 
 export default function Notifications() {
-  const { token, student } = useAuth();
-  const [notifications, setNotifications] = useState<Notificacao[]>([]);
+  const { token } = useAuth();
+  const [notifications, setNotifications] = useState<PortalNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -20,88 +19,48 @@ export default function Notifications() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (!token || !student) return;
-
-    let supabaseClient: any = null;
-
-    const init = async () => {
-      try {
-        const [configRes, notifRes] = await Promise.all([
-          fetch('/api/portal/config').then(r => r.json()),
-          fetch('/api/portal/notificacoes', {
-            headers: { Authorization: `Bearer ${token}` }
-          }).then(r => r.json())
-        ]);
-        
-        if (notifRes.notificacoes) {
-          setNotifications(notifRes.notificacoes);
-        }
-
-        if (configRes.supabaseUrl && configRes.supabaseAnonKey) {
-          supabaseClient = createClient(configRes.supabaseUrl, configRes.supabaseAnonKey);
-          
-          supabaseClient
-            .channel('portal_notificacoes')
-            .on(
-              'postgres_changes',
-              {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'notificacoes_aluno',
-                filter: `aluno_id=eq.${student.id}`
-              },
-              (payload: any) => {
-                const newNotif = payload.new as Notificacao;
-                setNotifications(prev => [newNotif, ...prev]);
-              }
-            )
-            .on(
-              'postgres_changes',
-              {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'notificacoes_aluno',
-                filter: `aluno_id=eq.${student.id}`
-              },
-              (payload: any) => {
-                const updated = payload.new as Notificacao;
-                setNotifications(prev => prev.map(n => n.id === updated.id ? updated : n));
-              }
-            )
-            .subscribe();
-        }
-      } catch (err) {
-        console.error('Erro ao inicializar notificações', err);
+  const fetchNotifications = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/portal/notificacoes', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.notifications) {
+        setNotifications(data.notifications);
       }
-    };
-    
-    init();
+    } catch (err) {
+      console.error('Erro ao buscar notificações', err);
+    }
+  }, [token]);
 
-    return () => {
-      if (supabaseClient) supabaseClient.removeAllChannels();
-    };
-  }, [token, student]);
+  useEffect(() => {
+    fetchNotifications();
+    // Polling a cada 30s para simular realtime via SchoolData
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
-  const unreadCount = notifications.filter(n => !n.lida).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = async (id: string | number) => {
+  const markAsRead = async (id: string) => {
     try {
       await fetch(`/api/portal/notificacoes/ler/${id}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, lida: true } : n));
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     } catch (err) {
       console.error(err);
     }
   };
 
-  const getIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'cancelamento': return <AlertCircle size={16} color="var(--color-danger)" />;
-      case 'reposicao': return <Calendar size={16} color="var(--color-success)" />;
-      default: return <Bell size={16} color="var(--color-primary)" />;
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Agora';
+    try {
+      return new Date(dateStr).toLocaleString('pt-BR');
+    } catch {
+      return dateStr;
     }
   };
 
@@ -117,12 +76,12 @@ export default function Notifications() {
           transition: 'all 0.2s ease', position: 'relative',
         }}
         onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-primary)';
-            e.currentTarget.style.color = 'var(--color-primary-light)';
+          e.currentTarget.style.borderColor = 'var(--color-primary)';
+          e.currentTarget.style.color = 'var(--color-primary-light)';
         }}
         onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-border)';
-            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          e.currentTarget.style.borderColor = 'var(--color-border)';
+          e.currentTarget.style.color = 'var(--color-text-secondary)';
         }}
       >
         <Bell size={18} />
@@ -132,7 +91,7 @@ export default function Notifications() {
             background: 'var(--color-danger)', color: 'white',
             width: 18, height: 18, borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.65rem', fontWeight: 'bold'
+            fontSize: '0.65rem', fontWeight: 'bold',
           }}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -142,16 +101,16 @@ export default function Notifications() {
       {isOpen && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-          width: 320, background: 'var(--color-surface)',
+          width: 340, background: 'var(--color-surface)',
           border: '1px solid var(--glass-border)', borderRadius: 12,
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 1000,
-          overflow: 'hidden'
+          boxShadow: '0 10px 25px rgba(0,0,0,0.15)', zIndex: 1000,
+          overflow: 'hidden',
         }}
           className="animate-scale-in"
         >
           <div style={{
             padding: '1rem', borderBottom: '1px solid var(--glass-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: 600 }}>Notificações</h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
@@ -159,7 +118,7 @@ export default function Notifications() {
             </span>
           </div>
 
-          <div style={{ maxHeight: 350, overflowY: 'auto' }}>
+          <div style={{ maxHeight: 380, overflowY: 'auto' }}>
             {notifications.length === 0 ? (
               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                 <Bell size={32} style={{ opacity: 0.2, margin: '0 auto 10px' }} />
@@ -167,41 +126,60 @@ export default function Notifications() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {notifications.map(notif => (
-                  <div key={notif.id} style={{
-                    padding: '1rem', borderBottom: '1px solid var(--glass-border)',
-                    background: notif.lida ? 'transparent' : 'var(--bg-primary-alpha)',
-                    display: 'flex', gap: '1rem', alignItems: 'flex-start',
-                    transition: 'background 0.2s',
-                  }}>
-                    <div style={{
-                      padding: 8, borderRadius: '50%', flexShrink: 0,
-                      background: notif.tipo === 'cancelamento' ? 'var(--bg-danger-alpha)' : notif.tipo === 'reposicao' ? 'var(--bg-success-alpha)' : 'var(--bg-primary-alpha)'
+                {notifications.map(notif => {
+                  // Detect cancel/repo keywords from title/message for visual cues
+                  const msgLower = (notif.title + ' ' + notif.message).toLowerCase();
+                  const isCancelamento = msgLower.includes('cancel');
+                  const isReposicao = msgLower.includes('reposi');
+
+                  return (
+                    <div key={notif.id} style={{
+                      padding: '1rem', borderBottom: '1px solid var(--glass-border)',
+                      background: notif.read ? 'transparent' : 'var(--bg-primary-alpha)',
+                      display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+                      transition: 'background 0.2s',
                     }}>
-                      {getIcon(notif.tipo)}
+                      <div style={{
+                        padding: 8, borderRadius: '50%', flexShrink: 0,
+                        background: isCancelamento ? 'var(--bg-danger-alpha)'
+                          : isReposicao ? 'var(--bg-success-alpha)'
+                          : 'var(--bg-primary-alpha)',
+                      }}>
+                        {isCancelamento
+                          ? <AlertCircle size={16} color="var(--color-danger)" />
+                          : <Info size={16} color={isReposicao ? 'var(--color-success)' : 'var(--color-primary)'} />
+                        }
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{
+                          fontSize: '0.8125rem', fontWeight: 600,
+                          color: isCancelamento ? 'var(--color-danger)' : 'var(--color-text)',
+                          marginBottom: 2,
+                        }}>
+                          {notif.title}
+                        </p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 4 }}>
+                          {notif.message}
+                        </p>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>
+                          {formatDate(notif.createdAt)}
+                        </span>
+                      </div>
+                      {!notif.read && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
+                          title="Marcar como lida"
+                          style={{
+                            background: 'none', border: 'none', color: 'var(--color-primary)',
+                            cursor: 'pointer', padding: 4, borderRadius: 4,
+                          }}
+                        >
+                          <Check size={16} />
+                        </button>
+                      )}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--color-text)', marginBottom: 4 }}>
-                        {notif.mensagem}
-                      </p>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>
-                        {notif.created_at ? new Date(notif.created_at).toLocaleString('pt-BR') : 'Agora'}
-                      </span>
-                    </div>
-                    {!notif.lida && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                        title="Marcar como lida"
-                        style={{
-                          background: 'none', border: 'none', color: 'var(--color-primary)',
-                          cursor: 'pointer', padding: 4, borderRadius: 4
-                        }}
-                      >
-                        <Check size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -57,10 +57,11 @@ export interface Attendance {
   id: string;
   studentId: string;
   classId: string;
-  date: string;
+  date: string; // ISO String (UTC)
+  photo?: string;
   verified: boolean;
   type?: 'presence' | 'absence';
-  justification?: string;
+  justification?: string; // string (upload em base64 ou texto do motivo)
 }
 
 export interface Class {
@@ -130,25 +131,27 @@ export interface AuthUser {
   name: string;
 }
 
-export interface Aula {
-  id: string | number;
-  turma_id?: string | number;
-  aluno_id?: string | number;
-  data?: string;
-  data_da_original?: string;
-  horario_inicio?: string;
-  horario_fim?: string;
-  motivo?: string;
-  status?: 'agendada' | 'cancelada' | 'realizada' | string;
-  tipo?: 'regular' | 'reposicao' | string;
-  disciplina_nome?: string;
+// ==========================================
+// Novas Interfaces — SchoolData (EduManager)
+// ==========================================
+
+export interface Lesson {
+  id: string;
+  classId: string;
+  date: string; // ISO Date YYYY-MM-DD
+  startTime?: string; // HH:mm
+  endTime?: string; // HH:mm
+  status: 'scheduled' | 'cancelled' | 'completed';
+  type: 'regular' | 'reposicao';
+  cancelReason?: string;
+  originalLessonId?: string;
 }
 
-export interface Notificacao {
-  id: string | number;
-  aluno_id: string | number;
-  mensagem: string;
-  lida: boolean;
-  tipo: 'cancelamento' | 'reposicao' | 'aviso' | string;
-  created_at?: string;
+export interface Notification {
+  id: string;
+  studentId: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string; // ISO string
 }

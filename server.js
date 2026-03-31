@@ -322,66 +322,72 @@ app.get('/api/portal/config', (req, res) => {
   });
 });
 
-// GET /api/portal/aulas
+// GET /api/portal/aulas (lessons from SchoolData JSON)
 app.get('/api/portal/aulas', authMiddleware, async (req, res) => {
   try {
-    const { data: aulas, error } = await supabase
-      .from('aulas')
-      .select('*')
-      // Adicionando or para turma_id ou aluno_id se o banco der suporte
-      .or(`aluno_id.eq.${req.user.studentId},aluno_id.is.null`)
-      // Apenas para garantir limite - ou buscar da view dependendo do schema:
-      .order('data', { ascending: true });
+    const schoolData = await getSchoolData();
+    // Find the student to get their classId
+    const student = (schoolData.students || []).find(s => s.id === req.user.studentId);
+    if (!student) return res.json({ lessons: [] });
 
-    if (error) {
-      console.error('Aulas query error:', error);
-      return res.json({ aulas: [] });
-    }
+    // Filter lessons by student classId and sort chronologically
+    const lessons = (schoolData.lessons || [])
+      .filter(l => l.classId === student.classId)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Filtragem de memória extra pro caso de turmas. 
-    // Em produção deveríamos usar classId do aluno também para pegar as aulas regulares da turma
-    res.json({ aulas: aulas || [] });
+    res.json({ lessons });
   } catch (err) {
     console.error('Aulas error:', err);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// GET /api/portal/notificacoes
+// GET /api/portal/notificacoes (notifications from SchoolData JSON)
 app.get('/api/portal/notificacoes', authMiddleware, async (req, res) => {
   try {
-    const { data: notificacoes, error } = await supabase
-      .from('notificacoes_aluno')
-      .select('*')
-      .eq('aluno_id', req.user.studentId)
-      .order('created_at', { ascending: false });
+    const schoolData = await getSchoolData();
+    const notifications = (schoolData.notifications || [])
+      .filter(n => n.studentId === req.user.studentId)
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
-    if (error) {
-      console.error('Notificacoes query error:', error);
-      return res.json({ notificacoes: [] });
-    }
-
-    res.json({ notificacoes: notificacoes || [] });
+    res.json({ notifications });
   } catch (err) {
     console.error('Notificacoes error:', err);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// PUT /api/portal/notificacoes/ler/:id
+// PUT /api/portal/notificacoes/ler/:id (mark as read via SchoolData JSON update)
 app.put('/api/portal/notificacoes/ler/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { error } = await supabase
-      .from('notificacoes_aluno')
-      .update({ lida: true })
-      .eq('id', id)
-      .eq('aluno_id', req.user.studentId); // segurança: só atualiza se for dele
 
-    if (error) {
-      return res.status(400).json({ error: 'Erro ao marcar como lida' });
+    const { data: schoolRow, error: fetchError } = await supabase
+      .from('school_data')
+      .select('data')
+      .eq('id', 1)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const schoolData = schoolRow?.data || {};
+    const notifications = schoolData.notifications || [];
+
+    const idx = notifications.findIndex(n => n.id === id && n.studentId === req.user.studentId);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Notificação não encontrada' });
     }
-    
+
+    notifications[idx] = { ...notifications[idx], read: true };
+    schoolData.notifications = notifications;
+
+    const { error: updateError } = await supabase
+      .from('school_data')
+      .update({ data: schoolData })
+      .eq('id', 1);
+
+    if (updateError) throw updateError;
+
     res.json({ success: true });
   } catch (err) {
     console.error('Notificacoes ler error:', err);

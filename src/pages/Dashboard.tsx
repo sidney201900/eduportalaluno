@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CreditCard, CalendarCheck, BookOpen, Clock, TrendingUp, AlertTriangle, CalendarClock } from 'lucide-react';
-import type { Payment, Attendance, Class, Course, Aula } from '../types';
+import type { Payment, Attendance, Class, Course, Lesson } from '../types';
 
 interface DashboardData {
   payments: Payment[];
   attendance: Attendance[];
-  aulas: Aula[];
+  lessons: Lesson[];
   studentClass: Class | null;
   course: Course | null;
 }
@@ -33,7 +33,7 @@ export default function Dashboard() {
         setData({
           payments: finData.payments || [],
           attendance: freqData.attendance || [],
-          aulas: aulasData.aulas || [],
+          lessons: aulasData.lessons || [],
           studentClass: meData.class || null,
           course: meData.course || null,
         });
@@ -86,24 +86,24 @@ export default function Dashboard() {
   };
 
   const getNext7DaysReplacements = () => {
-    if (!data?.aulas) return [];
+    if (!data?.lessons) return [];
     const now = new Date();
-    now.setHours(0,0,0,0);
+    now.setHours(0, 0, 0, 0);
     const in7Days = new Date(now);
     in7Days.setDate(in7Days.getDate() + 7);
-    return data.aulas.filter(a => {
-      if (a.status === 'cancelada') return false;
-      const classDate = new Date(a.data + 'T00:00:00');
-      return a.tipo === 'reposicao' && classDate >= now && classDate <= in7Days;
+    return data.lessons.filter(l => {
+      if (l.status === 'cancelled') return false;
+      const classDate = new Date(l.date + 'T00:00:00');
+      return l.type === 'reposicao' && classDate >= now && classDate <= in7Days;
     });
   };
 
   const getNextClass = () => {
-    if (!data?.aulas) return null;
+    if (!data?.lessons) return null;
     const now = new Date();
-    now.setHours(0,0,0,0);
-    const future = data.aulas.filter(a => a.status !== 'cancelada' && new Date(a.data + 'T00:00:00') >= now);
-    return future.sort((a, b) => new Date(a.data || 0).getTime() - new Date(b.data || 0).getTime())[0];
+    now.setHours(0, 0, 0, 0);
+    const future = data.lessons.filter(l => l.status !== 'cancelled' && new Date(l.date + 'T00:00:00') >= now);
+    return future.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
   };
 
   const formatTime = (t?: string) => t ? t.substring(0, 5) : '';
@@ -131,8 +131,8 @@ export default function Dashboard() {
           }}>
             <CalendarClock size={20} />
             <p style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
-              🗓️ <strong>Aviso:</strong> Você tem uma reposição agendada para o dia <strong>{formatDate(rep.data || '')}</strong>
-              {rep.horario_inicio ? ` às ${formatTime(rep.horario_inicio)}` : ''}.
+              🗓️ <strong>Aviso:</strong> Você tem uma reposição agendada para o dia <strong>{formatDate(rep.date || '')}</strong>
+              {rep.startTime ? ` às ${formatTime(rep.startTime)}` : ''}.
             </p>
           </div>
         ))}
@@ -193,14 +193,14 @@ export default function Dashboard() {
           {nextClass ? (
             <>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2 }}>
-                {nextClass.disciplina_nome || 'Aula Regular'}
+                {nextClass.type === 'reposicao' ? 'Reposição' : 'Aula Regular'}
               </h3>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
-                {formatDate(nextClass.data || '')}
+                {formatDate(nextClass.date || '')}
               </p>
-              {(nextClass.horario_inicio || nextClass.horario_fim) && (
+              {(nextClass.startTime || nextClass.endTime) && (
                 <p style={{ fontSize: '0.75rem', color: 'var(--color-accent)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Clock size={14} /> {formatTime(nextClass.horario_inicio)} {nextClass.horario_fim && `às ${formatTime(nextClass.horario_fim)}`}
+                  <Clock size={14} /> {formatTime(nextClass.startTime)} {nextClass.endTime && `às ${formatTime(nextClass.endTime)}`}
                 </p>
               )}
             </>
