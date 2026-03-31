@@ -141,7 +141,7 @@ export interface Lesson {
   date: string; // ISO Date YYYY-MM-DD
   startTime?: string; // HH:mm
   endTime?: string; // HH:mm
-  status: 'scheduled' | 'cancelled' | 'completed';
+  status: 'scheduled' | 'cancelled' | 'completed' | 'rescheduled';
   type: 'regular' | 'reposicao';
   cancelReason?: string;
   originalLessonId?: string;

@@ -65,6 +65,7 @@ export default function MinhasAulas() {
         ) : (
           lessons.map(lesson => {
             const isCancelled = lesson.status === 'cancelled';
+            const isRescheduled = lesson.status === 'rescheduled';
             const isReposicao = lesson.type === 'reposicao';
             const isCompleted = lesson.status === 'completed';
 
@@ -76,6 +77,7 @@ export default function MinhasAulas() {
                   padding: '1.5rem',
                   opacity: isCancelled ? 0.55 : 1,
                   borderLeft: isCancelled ? '4px solid var(--color-danger)'
+                    : isRescheduled ? '4px solid var(--color-warning)'
                     : isReposicao ? '4px solid var(--color-success)'
                     : '4px solid var(--color-primary)',
                 }}
@@ -110,6 +112,15 @@ export default function MinhasAulas() {
                       </span>
                     )}
 
+                    {isRescheduled && (
+                      <span style={{
+                        background: 'var(--color-warning)', color: 'white',
+                        padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
+                      }}>
+                        REAGENDADA
+                      </span>
+                    )}
+
                     {isReposicao && (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                         <span style={{
@@ -126,7 +137,7 @@ export default function MinhasAulas() {
                       </div>
                     )}
 
-                    {isCompleted && !isReposicao && (
+                    {isCompleted && !isReposicao && !isRescheduled && (
                       <span style={{
                         background: 'var(--color-border)', color: 'var(--color-text-secondary)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
@@ -135,7 +146,7 @@ export default function MinhasAulas() {
                       </span>
                     )}
 
-                    {!isCancelled && !isCompleted && !isReposicao && (
+                    {!isCancelled && !isCompleted && !isReposicao && !isRescheduled && (
                       <span style={{
                         background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
