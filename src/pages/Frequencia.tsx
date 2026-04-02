@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2, AlertTriangle, ChevronDown } from 'lucide-react';
-import type { Attendance } from '../types';
+import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2, AlertTriangle, ChevronDown, Clock } from 'lucide-react';
+import type { Attendance, Lesson } from '../types';
 
 export default function Frequencia() {
   const { token } = useAuth();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -20,11 +21,15 @@ export default function Frequencia() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/portal/frequencia', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setAttendance(data.attendance || []);
+        const headers = { Authorization: `Bearer ${token}` };
+        const [freqRes, aulasRes] = await Promise.all([
+          fetch('/api/portal/frequencia', { headers }),
+          fetch('/api/portal/aulas', { headers })
+        ]);
+        const freqData = await freqRes.json();
+        const aulasData = await aulasRes.json();
+        setAttendance(freqData.attendance || []);
+        setLessons(aulasData.lessons || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -135,12 +140,6 @@ export default function Frequencia() {
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  // Absences without justification (for the dropdown)
-  const unjustifiedAbsences = attendance.filter(a => {
-    const isAbsence = a.type === 'absence' || (!a.verified && a.type !== 'presence');
-    return isAbsence && !a.justification;
-  });
-
   const formatDate = (d: string) => {
     try {
       const date = new Date(d.length === 10 ? d + 'T12:00:00' : d);
@@ -171,6 +170,29 @@ export default function Frequencia() {
     }
   };
 
+  const now = new Date();
+
+  // Absences without justification logic (only count absences that are NOT in the future/in progress based on schedule)
+  const unjustifiedAbsences = attendance.filter(a => {
+    const isAbsence = a.type === 'absence' || (!a.verified && a.type !== 'presence');
+    if (!isAbsence || a.justification) return false;
+
+    const lessonObj = lessons.find(l => l.date === a.date.substring(0, 10));
+    let isCompletedOrPast = true;
+    if (lessonObj && lessonObj.startTime && lessonObj.endTime) {
+      const endDateTime = new Date(`${lessonObj.date}T${lessonObj.endTime}:00`);
+      if (now <= endDateTime) {
+        isCompletedOrPast = false; // Lesson hasn't finished yet
+      }
+    } else {
+      const d = new Date(a.date.substring(0, 10) + 'T23:59:59');
+      if (now <= d) {
+         isCompletedOrPast = false;
+      }
+    }
+    return isCompletedOrPast;
+  });
+
   return (
     <div className="page-container">
       {/* Header with justify button */}
@@ -181,7 +203,6 @@ export default function Frequencia() {
             <p className="page-subtitle">Acompanhe sua presença nas aulas</p>
           </div>
 
-          {/* Botão principal "Justificar Falta" no topo */}
           <button
             className="btn-primary"
             onClick={() => openJustifyModal()}
@@ -269,7 +290,8 @@ export default function Frequencia() {
               <thead>
                 <tr>
                   <th>Data</th>
-                  <th>Status</th>
+                  <th>Status de Aula</th>
+                  <th>Presença</th>
                   <th>Justificativa</th>
                 </tr>
               </thead>
@@ -277,12 +299,62 @@ export default function Frequencia() {
                 {sorted.map((record, idx) => {
                   const isPresent = record.type === 'presence' || record.verified;
                   const justText = parseJustification(record.justification);
+                  const dateStr = record.date.substring(0, 10);
+                  
+                  // Match with lesson to find status
+                  const lessonObj = lessons.find(l => l.date === dateStr);
+                  
+                  let isCompleted = false;
+                  let isInProgress = false;
+                  
+                  if (lessonObj && lessonObj.startTime && lessonObj.endTime) {
+                    const startDateTime = new Date(`${lessonObj.date}T${lessonObj.startTime}:00`);
+                    const endDateTime = new Date(`${lessonObj.date}T${lessonObj.endTime}:00`);
+                    if (now >= startDateTime && now <= endDateTime) {
+                      isInProgress = true;
+                    } else if (now > endDateTime || lessonObj.status === 'completed') {
+                      isCompleted = true;
+                    }
+                  } else {
+                    // Fallback to day calculation if no times
+                    const d = new Date(dateStr + 'T23:59:59');
+                    if (now > d) isCompleted = true;
+                  }
+
+                  const canJustify = !isPresent && isCompleted && !justText;
+
                   return (
                     <tr key={record.id} style={{
                       animation: `fadeIn 0.3s ease-out ${idx * 0.03}s forwards`,
                       opacity: 0,
                     }}>
                       <td>{formatDateFull(record.date)}</td>
+                      <td>
+                        {isInProgress ? (
+                           <span style={{
+                             background: 'var(--color-info)', color: 'white',
+                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                             display: 'inline-flex', alignItems: 'center', gap: 4
+                           }}>
+                             <Clock size={12} /> EM ANDAMENTO
+                           </span>
+                        ) : isCompleted ? (
+                           <span style={{
+                             background: 'var(--color-success)', color: 'white',
+                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                             display: 'inline-flex', alignItems: 'center', gap: 4
+                           }}>
+                             <CheckCircle2 size={12} /> CONCLUÍDA
+                           </span>
+                        ) : (
+                           <span style={{
+                             background: 'var(--color-border)', color: 'var(--color-text-secondary)',
+                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                           }}>
+                             AGENDADA
+                           </span>
+                        )}
+                      </td>
                       <td>
                         {isPresent ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
@@ -300,9 +372,9 @@ export default function Frequencia() {
                             <FileText size={14} color="var(--color-accent)" />
                             {justText}
                           </span>
-                        ) : !isPresent ? (
+                        ) : canJustify ? (
                           <button
-                            onClick={() => openJustifyModal(record.date.substring(0, 10))}
+                            onClick={() => openJustifyModal(dateStr)}
                             style={{
                               fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: 8,
                               background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)',

@@ -67,7 +67,27 @@ export default function MinhasAulas() {
             const isCancelled = lesson.status === 'cancelled';
             const isRescheduled = lesson.status === 'rescheduled';
             const isReposicao = lesson.type === 'reposicao';
-            const isCompleted = lesson.status === 'completed';
+            const now = new Date();
+            const dateStr = lesson.date;
+            
+            let isCompleted = lesson.status === 'completed';
+            let isInProgress = false;
+            
+            if (!isCancelled && !isRescheduled) {
+              if (lesson.startTime && lesson.endTime) {
+                const startDateTime = new Date(`${dateStr}T${lesson.startTime}:00`);
+                const endDateTime = new Date(`${dateStr}T${lesson.endTime}:00`);
+                if (now >= startDateTime && now <= endDateTime) {
+                  isInProgress = true;
+                  isCompleted = false;
+                } else if (now > endDateTime) {
+                  isCompleted = true;
+                }
+              } else {
+                const d = new Date(`${dateStr}T23:59:59`);
+                if (now > d) isCompleted = true;
+              }
+            }
 
             return (
               <div
@@ -78,6 +98,8 @@ export default function MinhasAulas() {
                   opacity: isCancelled ? 0.55 : 1,
                   borderLeft: isCancelled ? '4px solid var(--color-danger)'
                     : isRescheduled ? '4px solid var(--color-warning)'
+                    : isInProgress ? '4px solid var(--color-info)'
+                    : isCompleted ? '4px solid var(--color-success)'
                     : isReposicao ? '4px solid var(--color-success)'
                     : '4px solid var(--color-primary)',
                 }}
@@ -137,16 +159,26 @@ export default function MinhasAulas() {
                       </div>
                     )}
 
-                    {isCompleted && !isReposicao && !isRescheduled && (
+                    {isInProgress && !isCancelled && !isRescheduled && (
                       <span style={{
-                        background: 'var(--color-border)', color: 'var(--color-text-secondary)',
+                        background: 'var(--color-info)', color: 'white',
+                        padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
+                        display: 'flex', alignItems: 'center', gap: 4
+                      }}>
+                        <Clock size={12} /> EM ANDAMENTO
+                      </span>
+                    )}
+
+                    {isCompleted && !isReposicao && !isRescheduled && !isInProgress && (
+                      <span style={{
+                        background: 'var(--color-success)', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
                       }}>
                         CONCLUÍDA
                       </span>
                     )}
 
-                    {!isCancelled && !isCompleted && !isReposicao && !isRescheduled && (
+                    {!isCancelled && !isCompleted && !isReposicao && !isRescheduled && !isInProgress && (
                       <span style={{
                         background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
