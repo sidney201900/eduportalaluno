@@ -171,26 +171,26 @@ export default function Frequencia() {
   };
 
   const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
 
-  // Absences without justification logic (only count absences that are NOT in the future/in progress based on schedule)
-  const unjustifiedAbsences = attendance.filter(a => {
-    const isAbsence = a.type === 'absence' || (!a.verified && a.type !== 'presence');
-    if (!isAbsence || a.justification) return false;
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  tomorrow.setHours(23, 59, 59, 999);
 
-    const lessonObj = lessons.find(l => l.date === a.date.substring(0, 10));
-    let isCompletedOrPast = true;
-    if (lessonObj && lessonObj.startTime && lessonObj.endTime) {
-      const endDateTime = new Date(`${lessonObj.date}T${lessonObj.endTime}:00`);
-      if (now <= endDateTime) {
-        isCompletedOrPast = false; // Lesson hasn't finished yet
-      }
-    } else {
-      const d = new Date(a.date.substring(0, 10) + 'T23:59:59');
-      if (now <= d) {
-         isCompletedOrPast = false;
-      }
+  // Lessons available for justification (window: 1 day before to 1 day after)
+  const justifiableLessons = lessons.filter(l => {
+    if (l.status === 'cancelled') return false;
+    const d = new Date(l.date + 'T12:00:00');
+    if (d < yesterday || d > tomorrow) return false;
+    
+    const att = attendance.find(a => a.date.substring(0, 10) === l.date);
+    if (att) {
+      if (att.type === 'presence' || Math.trunc(att.verified ? 1 : 0)) return false;
+      if (att.justification) return false;
     }
-    return isCompletedOrPast;
+    return true;
   });
 
   return (
@@ -321,7 +321,9 @@ export default function Frequencia() {
                     if (now > d) isCompleted = true;
                   }
 
-                  const canJustify = !isPresent && isCompleted && !justText;
+                  const recordDate = new Date(dateStr + 'T12:00:00');
+                  const isWithinWindow = recordDate >= yesterday && recordDate <= tomorrow;
+                  const canJustify = !isPresent && isWithinWindow && !justText;
 
                   return (
                     <tr key={record.id} style={{
@@ -462,12 +464,12 @@ export default function Frequencia() {
                       cursor: 'pointer', width: '100%',
                     }}
                   >
-                    <option value="">— Selecione a data da falta —</option>
-                    {unjustifiedAbsences
+                    <option value="">— Selecione a data da aula —</option>
+                    {justifiableLessons
                       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map(a => (
-                        <option key={a.id} value={a.date.substring(0, 10)}>
-                          {formatDateFull(a.date)}
+                      .map(l => (
+                        <option key={l.id} value={l.date}>
+                          {formatDateFull(l.date)}
                         </option>
                       ))
                     }
