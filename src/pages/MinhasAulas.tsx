@@ -49,6 +49,8 @@ export default function MinhasAulas() {
     );
   }
 
+  const now = new Date();
+
   return (
     <div className="page-container">
       <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
@@ -67,7 +69,6 @@ export default function MinhasAulas() {
             const isCancelled = lesson.status === 'cancelled';
             const isRescheduled = lesson.status === 'rescheduled';
             const isReposicao = lesson.type === 'reposicao';
-            const now = new Date();
             const dateStr = lesson.date;
             
             let isCompleted = lesson.status === 'completed';
@@ -100,7 +101,6 @@ export default function MinhasAulas() {
                     : isRescheduled ? '4px solid var(--color-warning)'
                     : isInProgress ? '4px solid var(--color-info)'
                     : isCompleted ? '4px solid var(--color-success)'
-                    : isReposicao ? '4px solid var(--color-success)'
                     : '4px solid var(--color-primary)',
                 }}
               >
@@ -122,6 +122,22 @@ export default function MinhasAulas() {
                         </div>
                       )}
                     </div>
+                    {isReposicao && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                         <span style={{
+                          background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
+                          padding: '2px 8px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 600,
+                          border: '1px solid var(--color-primary-alpha)'
+                        }}>
+                          AULA DE REPOSIÇÃO
+                        </span>
+                        {lesson.originalLessonId && (
+                           <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>
+                             Ref. aula original
+                           </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
@@ -143,22 +159,6 @@ export default function MinhasAulas() {
                       </span>
                     )}
 
-                    {isReposicao && (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                        <span style={{
-                          background: 'var(--color-success)', color: 'white',
-                          padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
-                        }}>
-                          REPOSIÇÃO
-                        </span>
-                        {lesson.originalLessonId && (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                            Ref. aula original
-                          </span>
-                        )}
-                      </div>
-                    )}
-
                     {isInProgress && !isCancelled && !isRescheduled && (
                       <span style={{
                         background: 'var(--color-info)', color: 'white',
@@ -169,7 +169,7 @@ export default function MinhasAulas() {
                       </span>
                     )}
 
-                    {isCompleted && !isReposicao && !isRescheduled && !isInProgress && (
+                    {isCompleted && !isCancelled && !isRescheduled && !isInProgress && (
                       <span style={{
                         background: 'var(--color-success)', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
@@ -178,7 +178,7 @@ export default function MinhasAulas() {
                       </span>
                     )}
 
-                    {!isCancelled && !isCompleted && !isReposicao && !isRescheduled && !isInProgress && (
+                    {!isCancelled && !isCompleted && !isRescheduled && !isInProgress && (
                       <span style={{
                         background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,

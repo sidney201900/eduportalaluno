@@ -131,14 +131,48 @@ export default function Frequencia() {
     );
   }
 
+  const now = new Date();
+  
+  // Date window for justification
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  tomorrow.setHours(23, 59, 59, 999);
+
+  // Stats calculation (based on actual attendance records)
   const totalRecords = attendance.length;
   const presences = attendance.filter(a => a.type === 'presence' || a.verified).length;
   const absences = totalRecords - presences;
   const percentage = totalRecords > 0 ? Math.round((presences / totalRecords) * 100) : 100;
 
-  const sorted = [...attendance].sort((a, b) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime()
+  // Merge lessons and attendance to show a complete history
+  const mergedItems = lessons.map(lesson => {
+    const att = attendance.find(a => a.date.substring(0, 10) === lesson.date);
+    return { lesson, attendance: att };
+  });
+
+  const sortedItems = [...mergedItems].sort((a, b) =>
+    new Date(b.lesson.date).getTime() - new Date(a.lesson.date).getTime()
   );
+
+  // Collect lessons available for justification modal dropdown
+  const justifiableLessons = lessons.filter(l => {
+    if (l.status === 'cancelled') return false;
+    
+    // Check window
+    const d = new Date(l.date + 'T12:00:00');
+    if (d < yesterday || d > tomorrow) return false;
+    
+    const att = attendance.find(a => a.date.substring(0, 10) === l.date);
+    if (att) {
+      if (att.type === 'presence' || att.verified) return false;
+      if (att.justification) return false;
+    }
+    return true;
+  });
 
   const formatDate = (d: string) => {
     try {
@@ -170,32 +204,8 @@ export default function Frequencia() {
     }
   };
 
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  yesterday.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  tomorrow.setHours(23, 59, 59, 999);
-
-  // Lessons available for justification (window: 1 day before to 1 day after)
-  const justifiableLessons = lessons.filter(l => {
-    if (l.status === 'cancelled') return false;
-    const d = new Date(l.date + 'T12:00:00');
-    if (d < yesterday || d > tomorrow) return false;
-    
-    const att = attendance.find(a => a.date.substring(0, 10) === l.date);
-    if (att) {
-      if (att.type === 'presence' || Math.trunc(att.verified ? 1 : 0)) return false;
-      if (att.justification) return false;
-    }
-    return true;
-  });
-
   return (
     <div className="page-container">
-      {/* Header with justify button */}
       <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
@@ -270,18 +280,18 @@ export default function Frequencia() {
         <div className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
           <p style={{ fontSize: '2rem', fontWeight: 700 }}>{totalRecords}</p>
           <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, marginTop: 4 }}>
-            TOTAL DE AULAS
+            TOTAL DE REGISTROS
           </p>
         </div>
       </div>
 
       {/* List */}
-      {sorted.length === 0 ? (
+      {sortedItems.length === 0 ? (
         <div className="glass-card animate-fade-in" style={{
           padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)',
         }}>
           <CalendarCheck size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-          <p>Nenhum registro de frequência encontrado</p>
+          <p>Nenhuma aula encontrada no cronograma</p>
         </div>
       ) : (
         <div className="glass-card animate-fade-in" style={{ overflow: 'hidden' }}>
@@ -296,43 +306,47 @@ export default function Frequencia() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((record, idx) => {
-                  const isPresent = record.type === 'presence' || record.verified;
-                  const justText = parseJustification(record.justification);
-                  const dateStr = record.date.substring(0, 10);
+                {sortedItems.map((item, idx) => {
+                  const { lesson, attendance: att } = item;
+                  const isPresent = att ? (att.type === 'presence' || att.verified) : false;
+                  const justText = parseJustification(att?.justification);
+                  const dateStr = lesson.date;
                   
-                  // Match with lesson to find status
-                  const lessonObj = lessons.find(l => l.date === dateStr);
-                  
-                  let isCompleted = false;
+                  let isCompleted = lesson.status === 'completed';
                   let isInProgress = false;
                   
-                  if (lessonObj && lessonObj.startTime && lessonObj.endTime) {
-                    const startDateTime = new Date(`${lessonObj.date}T${lessonObj.startTime}:00`);
-                    const endDateTime = new Date(`${lessonObj.date}T${lessonObj.endTime}:00`);
+                  if (lesson.startTime && lesson.endTime) {
+                    const startDateTime = new Date(`${lesson.date}T${lesson.startTime}:00`);
+                    const endDateTime = new Date(`${lesson.date}T${lesson.endTime}:00`);
                     if (now >= startDateTime && now <= endDateTime) {
                       isInProgress = true;
-                    } else if (now > endDateTime || lessonObj.status === 'completed') {
+                    } else if (now > endDateTime) {
                       isCompleted = true;
                     }
                   } else {
-                    // Fallback to day calculation if no times
                     const d = new Date(dateStr + 'T23:59:59');
                     if (now > d) isCompleted = true;
                   }
 
                   const recordDate = new Date(dateStr + 'T12:00:00');
                   const isWithinWindow = recordDate >= yesterday && recordDate <= tomorrow;
-                  const canJustify = !isPresent && isWithinWindow && !justText;
+                  const canJustify = !isPresent && isWithinWindow && !justText && lesson.status !== 'cancelled';
 
                   return (
-                    <tr key={record.id} style={{
+                    <tr key={lesson.id} style={{
                       animation: `fadeIn 0.3s ease-out ${idx * 0.03}s forwards`,
                       opacity: 0,
                     }}>
-                      <td>{formatDateFull(record.date)}</td>
+                      <td>{formatDateFull(lesson.date)}</td>
                       <td>
-                        {isInProgress ? (
+                        {lesson.status === 'cancelled' ? (
+                          <span style={{
+                            background: 'var(--color-danger)', color: 'white',
+                            padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                          }}>
+                            CANCELADA
+                          </span>
+                        ) : isInProgress ? (
                            <span style={{
                              background: 'var(--color-info)', color: 'white',
                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
@@ -358,13 +372,19 @@ export default function Frequencia() {
                         )}
                       </td>
                       <td>
-                        {isPresent ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
-                            <CheckCircle2 size={16} /> Presente
-                          </span>
+                        {att ? (
+                          isPresent ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                              <CheckCircle2 size={16} /> Presente
+                            </span>
+                          ) : (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
+                              <XCircle size={16} /> Falta
+                            </span>
+                          )
                         ) : (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
-                            <XCircle size={16} /> Falta
+                          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                            {isCompleted ? 'Não registrado' : 'Aguardando'}
                           </span>
                         )}
                       </td>
@@ -389,7 +409,7 @@ export default function Frequencia() {
                             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
                           >
                             <Send size={14} />
-                            Justificar Falta
+                            Justificar
                           </button>
                         ) : (
                           <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
@@ -449,7 +469,6 @@ export default function Frequencia() {
             )}
 
             <form onSubmit={handleJustify} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Data da aula — lista suspensa */}
               <div>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
                   Data da aula *
@@ -481,7 +500,6 @@ export default function Frequencia() {
                 </div>
               </div>
 
-              {/* Motivo */}
               <div>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
                   Motivo da ausência *
@@ -496,7 +514,6 @@ export default function Frequencia() {
                 />
               </div>
 
-              {/* Anexo */}
               <div>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'block' }}>
                   Anexar documento (opcional)
@@ -515,7 +532,6 @@ export default function Frequencia() {
                 )}
               </div>
 
-              {/* Botões */}
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '0.5rem' }}>
                 <button
                   type="button"
