@@ -8,8 +8,24 @@ export default function Contratos() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    if (!viewingContract) return;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head><title>${viewingContract.title}</title>
+          <style>body { font-family: 'Inter', sans-serif; padding: 2rem; color: #1a1a1a; line-height: 1.6; text-align: justify; }</style>
+          </head>
+          <body>${viewingContract.content}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,57 +44,12 @@ export default function Contratos() {
     if (token) fetchData();
   }, [token]);
 
-  const generateContractPDF = async (contract: Contract) => {
-    try {
-      // @ts-ignore
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-      
-      const res = await fetch('/api/portal/escola');
-      const schoolData = await res.json();
-      const schoolName = schoolData?.name || 'Escola';
-
-      doc.setFontSize(16);
-      doc.text(schoolName, 105, 20, { align: 'center' });
-      
-      doc.setFontSize(14);
-      doc.text(contract.title, 105, 30, { align: 'center' });
-      
-      doc.setFontSize(12);
-      
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = contract.content || '';
-      const textContent = tempDiv.textContent || tempDiv.innerText || '';
-      
-      const lines = doc.splitTextToSize(textContent, 170);
-      
-      let y = 45;
-      for (let i = 0; i < lines.length; i++) {
-        if (y > 280) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(lines[i], 20, y);
-        y += 7;
-      }
-      
-      const blobUrl = doc.output('bloburl');
-      setPdfBlobUrl(blobUrl as string);
-    } catch (err) {
-      console.error('Failed to generate PDF:', err);
-      // Fallback
-    }
-  };
-
   const handleOpenModal = (contract: Contract) => {
     setViewingContract(contract);
-    setPdfBlobUrl(null);
-    generateContractPDF(contract);
   };
 
   const closeModal = () => {
     setViewingContract(null);
-    setPdfBlobUrl(null);
   };
 
   const formatDate = (d: string) => {
@@ -168,6 +139,9 @@ export default function Contratos() {
             }}>
               <h3 style={{ fontWeight: 600 }}>{viewingContract.title}</h3>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn-secondary" onClick={handlePrint} style={{ fontSize: '0.8125rem' }}>
+                  <Printer size={16} /> Imprimir
+                </button>
                 <button
                   onClick={closeModal}
                   style={{
@@ -181,19 +155,16 @@ export default function Contratos() {
               </div>
             </div>
             
-            <div style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
-              {pdfBlobUrl ? (
-                <iframe 
-                  src={pdfBlobUrl} 
-                  style={{ width: '100%', height: '100%', border: 'none', borderBottomLeftRadius: '1rem', borderBottomRightRadius: '1rem' }} 
-                  title="PDF Contract Viewer"
-                />
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-text-secondary)' }}>
-                  Gerando PDF...
-                </div>
-              )}
-            </div>
+            <div
+              ref={printRef}
+              style={{
+                padding: '2rem', overflow: 'auto', flex: 1,
+                fontSize: '0.9375rem', lineHeight: 1.8,
+                color: 'var(--color-text-secondary)',
+                textAlign: 'justify'
+              }}
+              dangerouslySetInnerHTML={{ __html: viewingContract.content }}
+            />
           </div>
         </div>
       )}

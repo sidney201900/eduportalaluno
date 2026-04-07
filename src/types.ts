@@ -63,6 +63,7 @@ export interface Attendance {
   verified: boolean;
   type?: 'presence' | 'absence';
   justification?: string; // string (upload em base64 ou texto do motivo)
+  justificationAccepted?: boolean;
 }
 
 export interface Class {

@@ -51,6 +51,20 @@ export default function MinhasAulas() {
   }
 
   const now = new Date();
+  const nowTime = now.getTime();
+
+  const sortedLessons = [...lessons].sort((a, b) => {
+    const { isInProgress: aProgress } = getLessonTimeStatus(a, now);
+    const { isInProgress: bProgress } = getLessonTimeStatus(b, now);
+
+    if (aProgress && !bProgress) return -1;
+    if (!aProgress && bProgress) return 1;
+
+    const diffA = Math.abs(new Date(a.date + (a.startTime ? `T${a.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
+    const diffB = Math.abs(new Date(b.date + (b.startTime ? `T${b.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
+    
+    return diffA - diffB;
+  });
 
   return (
     <div className="page-container">
@@ -66,13 +80,13 @@ export default function MinhasAulas() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} className="animate-fade-in stagger-children">
-        {lessons.length === 0 ? (
+        {sortedLessons.length === 0 ? (
           <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
             <CalendarIcon size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
             <p>Nenhuma aula encontrada no cronograma.</p>
           </div>
         ) : (
-          lessons.map(lesson => {
+          sortedLessons.map(lesson => {
             const isCancelled = lesson.status === 'cancelled';
             const isRescheduled = lesson.status === 'rescheduled';
             const isReposicao = lesson.type === 'reposicao';

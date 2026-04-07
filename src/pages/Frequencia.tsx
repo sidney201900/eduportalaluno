@@ -307,6 +307,7 @@ export default function Frequencia() {
                   const { lesson, attendance: att } = item;
                   const isPresent = att ? (att.type === 'presence' || att.verified) : false;
                   const justText = parseJustification(att?.justification);
+                  const isJustificationAccepted = att?.justificationAccepted === true;
                   const dateStr = lesson.date;
                   
                   const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
@@ -318,7 +319,7 @@ export default function Frequencia() {
                     <tr key={lesson.id} style={{
                       animation: `fadeIn 0.3s ease-out ${idx * 0.03}s forwards`,
                       opacity: 0,
-                      backgroundColor: justText ? 'rgba(251, 191, 36, 0.12)' : 'transparent',
+                      backgroundColor: isJustificationAccepted ? 'rgba(251, 191, 36, 0.12)' : 'transparent',
                     }}>
                       <td>{formatDateFull(lesson.date)}</td>
                       <td>
@@ -361,7 +362,7 @@ export default function Frequencia() {
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
                               <CheckCircle2 size={16} /> Presente
                             </span>
-                          ) : justText ? (
+                          ) : isJustificationAccepted ? (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-warning)' }}>
                               <AlertTriangle size={16} /> Falta justificada
                             </span>
@@ -378,9 +379,9 @@ export default function Frequencia() {
                       </td>
                       <td>
                         {justText ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem' }}>
-                            <FileText size={14} color="var(--color-accent)" />
-                            {justText}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: isJustificationAccepted ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
+                            <FileText size={14} color="currentColor" />
+                            {isJustificationAccepted ? 'Justificativa Aceita' : 'Em Análise'}
                           </span>
                         ) : canJustify ? (
                           <button

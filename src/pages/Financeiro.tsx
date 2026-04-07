@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ExternalLink, Filter, CreditCard, Printer } from 'lucide-react';
+import { ExternalLink, Filter, CreditCard, Printer, X } from 'lucide-react';
 import type { Payment, Boleto } from '../types';
 
 type FilterType = 'all' | 'pending' | 'paid' | 'overdue';
@@ -11,6 +11,7 @@ export default function Financeiro() {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [loading, setLoading] = useState(true);
+  const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -204,9 +205,14 @@ export default function Financeiro() {
                       <td>{getStatusBadge(payment.status)}</td>
                       <td>
                         {(payment.status === 'paid' || (payment as any).status === 'RECEIVED') ? (
-                          (payment as any).transactionReceiptUrl ? (
                             <button
-                              onClick={() => window.open((payment as any).transactionReceiptUrl, '_blank')}
+                              onClick={() => {
+                                if ((payment as any).transactionReceiptUrl) {
+                                  window.open((payment as any).transactionReceiptUrl, '_blank');
+                                } else {
+                                  setReceiptPayment(payment);
+                                }
+                              }}
                               className="btn-primary"
                               style={{
                                 fontSize: '0.75rem', padding: '0.375rem 0.75rem',
@@ -218,11 +224,6 @@ export default function Financeiro() {
                               <Printer size={14} />
                               Ver/Imprimir Recibo
                             </button>
-                          ) : (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              ✓ Quitado
-                            </span>
-                          )
                         ) : link ? (
                           <a
                             href={link}
@@ -246,6 +247,59 @@ export default function Financeiro() {
           </div>
         )}
       </div>
+
+      {receiptPayment && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2000, padding: '1rem',
+        }} onClick={() => setReceiptPayment(null)}>
+          <div className="glass-card animate-scale-in" style={{
+            width: '100%', maxWidth: '500px', backgroundColor: 'var(--color-surface)',
+            padding: '2rem', display: 'flex', flexDirection: 'column',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
+              <h3 style={{ fontWeight: 700, fontSize: '1.25rem' }}>Recibo de Pagamento</h3>
+              <button onClick={() => setReceiptPayment(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
+                 <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Referência:</span>
+                  <span style={{ fontWeight: 600 }}>{receiptPayment.description || `Parcela ${receiptPayment.installmentNumber || '—'}`}</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Valor Pago:</span>
+                  <span style={{ fontWeight: 600 }}>{formatCurrency(receiptPayment.amount - (receiptPayment.discount || 0))}</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Data de Vencimento:</span>
+                  <span style={{ fontWeight: 600 }}>{formatDate(receiptPayment.dueDate)}</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Status:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>Quitado</span>
+               </div>
+               {receiptPayment.asaasPaymentId && (
+                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Cód. Transação:</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{receiptPayment.asaasPaymentId}</span>
+                 </div>
+               )}
+            </div>
+
+            <button 
+              onClick={() => window.print()}
+              className="btn-primary" 
+              style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 600 }}
+            >
+              <Printer size={18} /> Imprimir Comprovante
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
