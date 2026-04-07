@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2, AlertTriangle, ChevronDown, Clock } from 'lucide-react';
 import type { Attendance, Lesson } from '../types';
+import { getLessonTimeStatus, isLessonWithinJustificationWindow } from '../lib/lessonUtils';
 
 export default function Frequencia() {
   const { token } = useAuth();
@@ -132,15 +133,6 @@ export default function Frequencia() {
   }
 
   const now = new Date();
-  
-  // Date window for justification
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  yesterday.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  tomorrow.setHours(23, 59, 59, 999);
 
   // Stats calculation (based on actual attendance records)
   const totalRecords = attendance.length;
@@ -163,8 +155,7 @@ export default function Frequencia() {
     if (l.status === 'cancelled') return false;
     
     // Check window
-    const d = new Date(l.date + 'T12:00:00');
-    if (d < yesterday || d > tomorrow) return false;
+    if (!isLessonWithinJustificationWindow(l.date, now)) return false;
     
     const att = attendance.find(a => a.date.substring(0, 10) === l.date);
     if (att) {
@@ -206,6 +197,12 @@ export default function Frequencia() {
 
   return (
     <div className="page-container">
+      <style>{`
+        @keyframes blink-status {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
       <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
@@ -312,30 +309,16 @@ export default function Frequencia() {
                   const justText = parseJustification(att?.justification);
                   const dateStr = lesson.date;
                   
-                  let isCompleted = lesson.status === 'completed';
-                  let isInProgress = false;
-                  
-                  if (lesson.startTime && lesson.endTime) {
-                    const startDateTime = new Date(`${lesson.date}T${lesson.startTime}:00`);
-                    const endDateTime = new Date(`${lesson.date}T${lesson.endTime}:00`);
-                    if (now >= startDateTime && now <= endDateTime) {
-                      isInProgress = true;
-                    } else if (now > endDateTime) {
-                      isCompleted = true;
-                    }
-                  } else {
-                    const d = new Date(dateStr + 'T23:59:59');
-                    if (now > d) isCompleted = true;
-                  }
+                  const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
 
-                  const recordDate = new Date(dateStr + 'T12:00:00');
-                  const isWithinWindow = recordDate >= yesterday && recordDate <= tomorrow;
+                  const isWithinWindow = isLessonWithinJustificationWindow(dateStr, now);
                   const canJustify = !isPresent && isWithinWindow && !justText && lesson.status !== 'cancelled';
 
                   return (
                     <tr key={lesson.id} style={{
                       animation: `fadeIn 0.3s ease-out ${idx * 0.03}s forwards`,
                       opacity: 0,
+                      backgroundColor: justText ? 'rgba(251, 191, 36, 0.12)' : 'transparent',
                     }}>
                       <td>{formatDateFull(lesson.date)}</td>
                       <td>
@@ -350,7 +333,8 @@ export default function Frequencia() {
                            <span style={{
                              background: 'var(--color-info)', color: 'white',
                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
-                             display: 'inline-flex', alignItems: 'center', gap: 4
+                             display: 'inline-flex', alignItems: 'center', gap: 4,
+                             animation: 'blink-status 1.5s infinite'
                            }}>
                              <Clock size={12} /> EM ANDAMENTO
                            </span>
@@ -376,6 +360,10 @@ export default function Frequencia() {
                           isPresent ? (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
                               <CheckCircle2 size={16} /> Presente
+                            </span>
+                          ) : justText ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-warning)' }}>
+                              <AlertTriangle size={16} /> Falta justificada
                             </span>
                           ) : (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>

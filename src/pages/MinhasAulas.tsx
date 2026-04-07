@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { Lesson } from '../types';
+import { getLessonTimeStatus } from '../lib/lessonUtils';
 
 export default function MinhasAulas() {
   const { token } = useAuth();
@@ -53,6 +54,12 @@ export default function MinhasAulas() {
 
   return (
     <div className="page-container">
+      <style>{`
+        @keyframes blink-status {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
       <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
         <h1 className="page-title">Cronograma de Aulas</h1>
         <p className="page-subtitle">Acompanhe suas aulas e reposições agendadas</p>
@@ -71,24 +78,7 @@ export default function MinhasAulas() {
             const isReposicao = lesson.type === 'reposicao';
             const dateStr = lesson.date;
             
-            let isCompleted = lesson.status === 'completed';
-            let isInProgress = false;
-            
-            if (!isCancelled && !isRescheduled) {
-              if (lesson.startTime && lesson.endTime) {
-                const startDateTime = new Date(`${dateStr}T${lesson.startTime}:00`);
-                const endDateTime = new Date(`${dateStr}T${lesson.endTime}:00`);
-                if (now >= startDateTime && now <= endDateTime) {
-                  isInProgress = true;
-                  isCompleted = false;
-                } else if (now > endDateTime) {
-                  isCompleted = true;
-                }
-              } else {
-                const d = new Date(`${dateStr}T23:59:59`);
-                if (now > d) isCompleted = true;
-              }
-            }
+            const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
 
             return (
               <div
@@ -163,7 +153,8 @@ export default function MinhasAulas() {
                       <span style={{
                         background: 'var(--color-info)', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
-                        display: 'flex', alignItems: 'center', gap: 4
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        animation: 'blink-status 1.5s infinite'
                       }}>
                         <Clock size={12} /> EM ANDAMENTO
                       </span>

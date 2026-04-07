@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ExternalLink, Filter, CreditCard } from 'lucide-react';
+import { ExternalLink, Filter, CreditCard, Printer } from 'lucide-react';
 import type { Payment, Boleto } from '../types';
 
 type FilterType = 'all' | 'pending' | 'paid' | 'overdue';
@@ -53,6 +53,7 @@ export default function Financeiro() {
   const getStatusBadge = (status: string) => {
     const map: Record<string, { className: string; label: string }> = {
       paid: { className: 'badge badge-success', label: 'Pago' },
+      RECEIVED: { className: 'badge badge-success', label: 'Pago' },
       pending: { className: 'badge badge-warning', label: 'Pendente' },
       overdue: { className: 'badge badge-danger', label: 'Atrasado' },
     };
@@ -202,7 +203,27 @@ export default function Financeiro() {
                       </td>
                       <td>{getStatusBadge(payment.status)}</td>
                       <td>
-                        {link && payment.status !== 'paid' ? (
+                        {(payment.status === 'paid' || (payment as any).status === 'RECEIVED') ? (
+                          (payment as any).transactionReceiptUrl ? (
+                            <button
+                              onClick={() => window.open((payment as any).transactionReceiptUrl, '_blank')}
+                              className="btn-primary"
+                              style={{
+                                fontSize: '0.75rem', padding: '0.375rem 0.75rem',
+                                display: 'flex', alignItems: 'center', gap: '0.35rem',
+                                background: 'var(--color-primary)', color: 'white', border: 'none',
+                                cursor: 'pointer', borderRadius: 8, fontWeight: 500
+                              }}
+                            >
+                              <Printer size={14} />
+                              Ver/Imprimir Recibo
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              ✓ Quitado
+                            </span>
+                          )
+                        ) : link ? (
                           <a
                             href={link}
                             target="_blank"
@@ -213,8 +234,6 @@ export default function Financeiro() {
                             <ExternalLink size={14} />
                             Ver Boleto
                           </a>
-                        ) : payment.status === 'paid' ? (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-success)' }}>✓ Quitado</span>
                         ) : (
                           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>—</span>
                         )}

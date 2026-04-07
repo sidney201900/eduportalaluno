@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FileText, Eye, Printer, X } from 'lucide-react';
+import { FileText, Eye, Printer, X, FileSignature } from 'lucide-react';
 import type { Contract } from '../types';
 
 export default function Contratos() {
@@ -8,6 +8,7 @@ export default function Contratos() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,21 +28,57 @@ export default function Contratos() {
     if (token) fetchData();
   }, [token]);
 
-  const handlePrint = () => {
-    if (!viewingContract) return;
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head><title>${viewingContract.title}</title>
-          <style>body { font-family: 'Inter', sans-serif; padding: 2rem; color: #1a1a1a; line-height: 1.6; }</style>
-          </head>
-          <body>${viewingContract.content}</body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+  const generateContractPDF = async (contract: Contract) => {
+    try {
+      // @ts-ignore
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      
+      const res = await fetch('/api/portal/escola');
+      const schoolData = await res.json();
+      const schoolName = schoolData?.name || 'Escola';
+
+      doc.setFontSize(16);
+      doc.text(schoolName, 105, 20, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.text(contract.title, 105, 30, { align: 'center' });
+      
+      doc.setFontSize(12);
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = contract.content || '';
+      const textContent = tempDiv.textContent || tempDiv.innerText || '';
+      
+      const lines = doc.splitTextToSize(textContent, 170);
+      
+      let y = 45;
+      for (let i = 0; i < lines.length; i++) {
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(lines[i], 20, y);
+        y += 7;
+      }
+      
+      const blobUrl = doc.output('bloburl');
+      setPdfBlobUrl(blobUrl as string);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      // Fallback
     }
+  };
+
+  const handleOpenModal = (contract: Contract) => {
+    setViewingContract(contract);
+    setPdfBlobUrl(null);
+    generateContractPDF(contract);
+  };
+
+  const closeModal = () => {
+    setViewingContract(null);
+    setPdfBlobUrl(null);
   };
 
   const formatDate = (d: string) => {
@@ -98,11 +135,11 @@ export default function Contratos() {
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button
-                  className="btn-secondary"
-                  onClick={() => setViewingContract(contract)}
-                  style={{ fontSize: '0.8125rem' }}
+                  className="btn-primary"
+                  onClick={() => handleOpenModal(contract)}
+                  style={{ fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                 >
-                  <Eye size={16} /> Visualizar
+                  <FileSignature size={16} /> Ver Contrato Atual
                 </button>
               </div>
             </div>
@@ -113,14 +150,14 @@ export default function Contratos() {
       {/* Modal */}
       {viewingContract && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'var(--overlay-bg)',
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 2000, padding: '1rem',
         }}
-          onClick={() => setViewingContract(null)}
+          onClick={closeModal}
         >
           <div className="glass-card animate-scale-in" style={{
-            width: '100%', maxWidth: 800, maxHeight: '90vh',
+            width: '100%', maxWidth: '896px', height: '80vh',
             display: 'flex', flexDirection: 'column',
           }}
             onClick={e => e.stopPropagation()}
@@ -131,11 +168,8 @@ export default function Contratos() {
             }}>
               <h3 style={{ fontWeight: 600 }}>{viewingContract.title}</h3>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn-secondary" onClick={handlePrint} style={{ fontSize: '0.8125rem' }}>
-                  <Printer size={16} /> Imprimir
-                </button>
                 <button
-                  onClick={() => setViewingContract(null)}
+                  onClick={closeModal}
                   style={{
                     width: 36, height: 36, borderRadius: 10, border: 'none',
                     background: 'var(--color-surface-lighter)', color: 'var(--color-text)',
@@ -146,15 +180,20 @@ export default function Contratos() {
                 </button>
               </div>
             </div>
-            <div
-              ref={printRef}
-              style={{
-                padding: '1.5rem', overflow: 'auto', flex: 1,
-                fontSize: '0.875rem', lineHeight: 1.7,
-                color: 'var(--color-text-secondary)',
-              }}
-              dangerouslySetInnerHTML={{ __html: viewingContract.content }}
-            />
+            
+            <div style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
+              {pdfBlobUrl ? (
+                <iframe 
+                  src={pdfBlobUrl} 
+                  style={{ width: '100%', height: '100%', border: 'none', borderBottomLeftRadius: '1rem', borderBottomRightRadius: '1rem' }} 
+                  title="PDF Contract Viewer"
+                />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-text-secondary)' }}>
+                  Gerando PDF...
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

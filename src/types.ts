@@ -43,6 +43,7 @@ export interface Payment {
   description?: string;
   asaasPaymentId?: string;
   asaasPaymentUrl?: string;
+  transactionReceiptUrl?: string;
 }
 
 export interface Grade {
