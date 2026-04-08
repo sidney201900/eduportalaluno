@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, Check, AlertCircle, Info } from 'lucide-react';
+import { Bell, Check, AlertCircle, Info, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { Notification as PortalNotification } from '../types';
 
@@ -55,6 +55,20 @@ export default function Notifications() {
     }
   };
 
+  const deleteNotification = async (id: string) => {
+    try {
+      await fetch(`/api/portal/notificacoes/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      console.error(err);
+      // Fallback: remove locally even if API fails
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }
+  };
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Agora';
     try {
@@ -66,6 +80,21 @@ export default function Notifications() {
 
   return (
     <div ref={dropdownRef} style={{ position: 'relative' }}>
+      <style>{`
+        @keyframes pulse-bell {
+          0% { transform: scale(1); }
+          15% { transform: scale(1.15) rotate(8deg); }
+          30% { transform: scale(1.15) rotate(-8deg); }
+          45% { transform: scale(1.15) rotate(5deg); }
+          60% { transform: scale(1.15) rotate(-5deg); }
+          75% { transform: scale(1); }
+          100% { transform: scale(1); }
+        }
+        @keyframes badge-pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.25); opacity: 0.8; }
+        }
+      `}</style>
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -84,7 +113,9 @@ export default function Notifications() {
           e.currentTarget.style.color = 'var(--color-text-secondary)';
         }}
       >
-        <Bell size={18} />
+        <Bell size={18} style={{
+          animation: unreadCount > 0 ? 'pulse-bell 2s ease-in-out infinite' : undefined,
+        }} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute', top: -4, right: -4,
@@ -92,6 +123,7 @@ export default function Notifications() {
             width: 18, height: 18, borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '0.65rem', fontWeight: 'bold',
+            animation: 'badge-pulse 1.5s ease-in-out infinite',
           }}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -165,7 +197,7 @@ export default function Notifications() {
                           {formatDate(notif.createdAt)}
                         </span>
                       </div>
-                      {!notif.read && (
+                      {!notif.read ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
                           title="Marcar como lida"
@@ -175,6 +207,20 @@ export default function Notifications() {
                           }}
                         >
                           <Check size={16} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
+                          title="Excluir notificação"
+                          style={{
+                            background: 'none', border: 'none', color: 'var(--color-danger)',
+                            cursor: 'pointer', padding: 4, borderRadius: 4,
+                            opacity: 0.6, transition: 'opacity 0.2s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+                          onMouseLeave={e => { e.currentTarget.style.opacity = '0.6'; }}
+                        >
+                          <Trash2 size={16} />
                         </button>
                       )}
                     </div>

@@ -155,13 +155,44 @@ export default function Contratos() {
               </div>
             </div>
             
+            <style>{`
+              .contract-content p,
+              .contract-content div {
+                margin-bottom: 1rem;
+                text-indent: 2rem;
+              }
+              .contract-content br + br {
+                display: block;
+                margin-top: 0.75rem;
+                content: '';
+              }
+              .contract-content h1,
+              .contract-content h2,
+              .contract-content h3,
+              .contract-content h4 {
+                text-align: center;
+                margin: 1.5rem 0 1rem;
+                text-indent: 0;
+                font-weight: 700;
+              }
+              .contract-content ul,
+              .contract-content ol {
+                padding-left: 2.5rem;
+                margin-bottom: 1rem;
+              }
+              .contract-content li {
+                margin-bottom: 0.5rem;
+              }
+            `}</style>
             <div
               ref={printRef}
+              className="contract-content"
               style={{
                 padding: '2rem', overflow: 'auto', flex: 1,
                 fontSize: '0.9375rem', lineHeight: 1.8,
                 color: 'var(--color-text-secondary)',
-                textAlign: 'justify'
+                textAlign: 'justify',
+                whiteSpace: 'pre-line',
               }}
               dangerouslySetInnerHTML={{ __html: viewingContract.content }}
             />

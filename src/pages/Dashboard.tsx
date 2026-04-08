@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CreditCard, CalendarCheck, BookOpen, Clock, TrendingUp, AlertTriangle, CalendarClock } from 'lucide-react';
 import type { Payment, Attendance, Class, Course, Lesson } from '../types';
+import { getLessonTimeStatus } from '../lib/lessonUtils';
 
 interface DashboardData {
   payments: Payment[];
@@ -98,21 +99,50 @@ export default function Dashboard() {
     });
   };
 
-  const getNextClass = () => {
+  const getNextOrCurrentClass = (): { lesson: Lesson; isInProgress: boolean } | null => {
     if (!data?.lessons) return null;
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const future = data.lessons.filter(l => l.status !== 'cancelled' && new Date(l.date + 'T00:00:00') >= now);
-    return future.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    
+    // First check if any lesson is currently in progress
+    const inProgress = data.lessons.find(l => {
+      if (l.status === 'cancelled') return false;
+      const { isInProgress } = getLessonTimeStatus(l, now);
+      return isInProgress;
+    });
+    if (inProgress) return { lesson: inProgress, isInProgress: true };
+    
+    // Otherwise find the next upcoming lesson (closest to now)
+    const nowZero = new Date();
+    nowZero.setHours(0, 0, 0, 0);
+    const future = data.lessons
+      .filter(l => l.status !== 'cancelled' && new Date(l.date + 'T00:00:00') >= nowZero)
+      .sort((a, b) => {
+        const diffA = Math.abs(new Date(a.date + (a.startTime ? `T${a.startTime}:00` : 'T12:00:00')).getTime() - now.getTime());
+        const diffB = Math.abs(new Date(b.date + (b.startTime ? `T${b.startTime}:00` : 'T12:00:00')).getTime() - now.getTime());
+        return diffA - diffB;
+      });
+    return future[0] ? { lesson: future[0], isInProgress: false } : null;
   };
 
   const formatTime = (t?: string) => t ? t.substring(0, 5) : '';
 
   const replacements = getNext7DaysReplacements();
-  const nextClass = getNextClass();
+  const nextClassInfo = getNextOrCurrentClass();
+  const nextClass = nextClassInfo?.lesson || null;
+  const isCurrentlyInProgress = nextClassInfo?.isInProgress || false;
 
   return (
     <div className="page-container">
+      <style>{`
+        @keyframes blink-status {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes pulse-glow {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.85; }
+        }
+      `}</style>
       {/* Greeting */}
       <div className="animate-fade-in" style={{ marginBottom: '2rem' }}>
         <h1 className="page-title">
@@ -175,33 +205,49 @@ export default function Dashboard() {
         </div>
 
         {/* Próxima Aula Card */}
-        <div className="glass-card" style={{ padding: '1.5rem' }}>
+        <div className="glass-card" style={{
+          padding: '1.5rem',
+          borderLeft: isCurrentlyInProgress ? '4px solid var(--color-info)' : undefined,
+          background: isCurrentlyInProgress ? 'var(--bg-primary-alpha)' : undefined,
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
-              background: 'var(--bg-primary-alpha)',
+              background: isCurrentlyInProgress ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-primary-alpha)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              animation: isCurrentlyInProgress ? 'pulse-glow 2s infinite' : undefined,
             }}>
-              <CalendarClock size={22} color="var(--color-primary-light)" />
+              <CalendarClock size={22} color={isCurrentlyInProgress ? 'var(--color-info)' : 'var(--color-primary-light)'} />
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                PRÓXIMA AULA
+                {isCurrentlyInProgress ? '🔴 AULA EM ANDAMENTO' : 'PRÓXIMA AULA'}
               </p>
             </div>
           </div>
           {nextClass ? (
             <>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2 }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2, color: isCurrentlyInProgress ? 'var(--color-info)' : undefined }}>
                 {nextClass.type === 'reposicao' ? 'Reposição' : 'Aula Regular'}
               </h3>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
                 {formatDate(nextClass.date || '')}
               </p>
               {(nextClass.startTime || nextClass.endTime) && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-accent)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <p style={{ fontSize: '0.75rem', color: isCurrentlyInProgress ? 'var(--color-info)' : 'var(--color-accent)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Clock size={14} /> {formatTime(nextClass.startTime)} {nextClass.endTime && `às ${formatTime(nextClass.endTime)}`}
                 </p>
+              )}
+              {isCurrentlyInProgress && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  marginTop: '0.75rem', padding: '4px 10px', borderRadius: 6,
+                  background: 'var(--color-info)', color: 'white',
+                  fontSize: '0.7rem', fontWeight: 600,
+                  animation: 'blink-status 1.5s infinite',
+                }}>
+                  <Clock size={12} /> EM ANDAMENTO
+                </span>
               )}
             </>
           ) : (

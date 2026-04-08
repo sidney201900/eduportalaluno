@@ -146,9 +146,20 @@ export default function Frequencia() {
     return { lesson, attendance: att };
   });
 
-  const sortedItems = [...mergedItems].sort((a, b) =>
-    new Date(b.lesson.date).getTime() - new Date(a.lesson.date).getTime()
-  );
+  const sortedItems = [...mergedItems].sort((a, b) => {
+    const nowTime = now.getTime();
+    const { isInProgress: aProgress } = getLessonTimeStatus(a.lesson, now);
+    const { isInProgress: bProgress } = getLessonTimeStatus(b.lesson, now);
+    
+    // In-progress lessons always first
+    if (aProgress && !bProgress) return -1;
+    if (!aProgress && bProgress) return 1;
+    
+    // Then by proximity to current date/time (closest first)
+    const diffA = Math.abs(new Date(a.lesson.date + (a.lesson.startTime ? `T${a.lesson.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
+    const diffB = Math.abs(new Date(b.lesson.date + (b.lesson.startTime ? `T${b.lesson.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
+    return diffA - diffB;
+  });
 
   // Collect lessons available for justification modal dropdown
   const justifiableLessons = lessons.filter(l => {
@@ -300,6 +311,7 @@ export default function Frequencia() {
                   <th>Status de Aula</th>
                   <th>Presença</th>
                   <th>Justificativa</th>
+                  <th>Texto da Justificativa</th>
                 </tr>
               </thead>
               <tbody>
@@ -400,6 +412,15 @@ export default function Frequencia() {
                             <Send size={14} />
                             Justificar
                           </button>
+                        ) : (
+                          <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        {justText ? (
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', maxWidth: 250, display: 'block', wordBreak: 'break-word' }}>
+                            {justText}
+                          </span>
                         ) : (
                           <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
                         )}
