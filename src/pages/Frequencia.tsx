@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2, AlertTriangle, ChevronDown, Clock } from 'lucide-react';
 import type { Attendance, Lesson } from '../types';
-import { getLessonTimeStatus, isLessonWithinJustificationWindow } from '../lib/lessonUtils';
+import { getLessonTimeStatus, isLessonWithinJustificationWindow, parseLessonDateTime } from '../lib/lessonUtils';
 import { useRealTimeDate } from '../hooks/useRealTimeDate';
 
 export default function Frequencia() {
@@ -164,14 +164,8 @@ export default function Frequencia() {
     if (!dB) return -1;
 
     // Then by proximity to current date/time (closest first)
-    const timeA = typeof a.lesson.startTime === 'string' ? a.lesson.startTime.substring(0, 5) : '12:00';
-    const timeB = typeof b.lesson.startTime === 'string' ? b.lesson.startTime.substring(0, 5) : '12:00';
-    const tA = timeA.split(':');
-    const tB = timeB.split(':');
-    const pA = dA.split('-');
-    const pB = dB.split('-');
-    const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
-    const dateB = new Date(Number(pB[0]), Number(pB[1])-1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
+    const dateA = parseLessonDateTime(dA, a.lesson.startTime);
+    const dateB = parseLessonDateTime(dB, b.lesson.startTime);
     
     const diffA = isNaN(dateA) ? Infinity : Math.abs(dateA - nowTime);
     const diffB = isNaN(dateB) ? Infinity : Math.abs(dateB - nowTime);
@@ -420,16 +414,20 @@ export default function Frequencia() {
                       <td>
                         {att && isPresent ? (() => {
                           try {
-                            const d = new Date(att.date);
-                            // If date includes time info (not just YYYY-MM-DD)
-                            if (att.date.length > 10) {
-                              return (
-                                <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                                  {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              );
+                            const exactTimeStr = (att as any).createdAt || (att as any).created_at || (att as any).timestamp || (att.date.length > 10 ? att.date : null);
+                            if (exactTimeStr) {
+                              const d = new Date(exactTimeStr);
+                              // Garante que é uma data válida antes de formatar
+                              if (!isNaN(d.getTime())) {
+                                return (
+                                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                                    {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                );
+                              }
                             }
-                            return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
+                            // Fallback se não foi possível extrair a hora exata
+                            return <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>D/D</span>;
                           } catch {
                             return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
                           }

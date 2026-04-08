@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CreditCard, CalendarCheck, BookOpen, Clock, TrendingUp, AlertTriangle, CalendarClock } from 'lucide-react';
 import type { Payment, Attendance, Class, Course, Lesson } from '../types';
-import { getLessonTimeStatus } from '../lib/lessonUtils';
+import { getLessonTimeStatus, parseLessonDateTime } from '../lib/lessonUtils';
 import { useRealTimeDate } from '../hooks/useRealTimeDate';
 
 interface DashboardData {
@@ -128,14 +128,8 @@ export default function Dashboard() {
         if (!dA) return 1;
         if (!dB) return -1;
         
-        const timeA = typeof a.startTime === 'string' ? a.startTime.substring(0, 5) : '12:00';
-        const timeB = typeof b.startTime === 'string' ? b.startTime.substring(0, 5) : '12:00';
-        const tA = timeA.split(':');
-        const tB = timeB.split(':');
-        const pA = dA.split('-');
-        const pB = dB.split('-');
-        const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
-        const dateB = new Date(Number(pB[0]), Number(pB[1])-1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
+        const dateA = parseLessonDateTime(dA, a.startTime);
+        const dateB = parseLessonDateTime(dB, b.startTime);
         
         const diffA = isNaN(dateA) ? Infinity : dateA;
         const diffB = isNaN(dateB) ? Infinity : dateB;

@@ -13,6 +13,30 @@ function normalizeTime(time: string): string {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+export function parseLessonDateTime(dateStr: string, timeStr?: string): number {
+  if (!dateStr || typeof dateStr !== 'string') return NaN;
+  
+  let y = 0, m = 0, d = 0;
+  
+  if (dateStr.includes('/')) {
+    const parts = dateStr.substring(0, 10).split('/');
+    d = Number(parts[0]); m = Number(parts[1]) - 1; y = Number(parts[2]);
+  } else {
+    const parts = dateStr.substring(0, 10).split('-');
+    y = Number(parts[0]); m = Number(parts[1]) - 1; d = Number(parts[2]);
+  }
+  
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return NaN;
+  
+  let h = 12, min = 0, s = 0;
+  if (timeStr && typeof timeStr === 'string') {
+    const tParts = timeStr.split(':');
+    h = Number(tParts[0] || 12); min = Number(tParts[1] || 0); s = Number(tParts[2] || 0);
+  }
+  
+  return new Date(y, m, d, h, min, s).getTime();
+}
+
 export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
   let isCompleted = lesson.status === 'completed';
   let isInProgress = false;
@@ -24,30 +48,19 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
   const lessonDateStr = typeof lesson.date === 'string' ? lesson.date.substring(0, 10) : '';
   if (!lessonDateStr) return { isInProgress, isCompleted };
 
-  const [y, m, d] = lessonDateStr.split('-').map(Number);
+  const startMs = parseLessonDateTime(lessonDateStr, lesson.startTime);
+  const endMs = parseLessonDateTime(lessonDateStr, lesson.endTime || '23:59:59');
+  const nowMs = now.getTime();
 
-  if (lesson.startTime && lesson.endTime) {
-    const startParts = normalizeTime(lesson.startTime).split(':').map(Number);
-    const endParts = normalizeTime(lesson.endTime).split(':').map(Number);
-
-    // Construtor explícito: new Date(year, monthIndex, day, hours, minutes, seconds)
-    // Isso garante que SEMPRE será interpretado no fuso horário local do navegador
-    const startDateTime = new Date(y, m - 1, d, startParts[0], startParts[1], startParts[2]);
-    const endDateTime = new Date(y, m - 1, d, endParts[0], endParts[1], endParts[2]);
-
-    if (!isNaN(startDateTime.getTime()) && !isNaN(endDateTime.getTime())) {
-      if (now >= startDateTime && now <= endDateTime) {
-        isInProgress = true;
-        isCompleted = false;
-      } else if (now > endDateTime) {
-        isCompleted = true;
-      }
-    }
-  } else {
-    const endOfDay = new Date(y, m - 1, d, 23, 59, 59);
-    if (!isNaN(endOfDay.getTime()) && now > endOfDay) {
+  if (!isNaN(startMs) && !isNaN(endMs)) {
+    if (nowMs >= startMs && nowMs <= endMs) {
+      isInProgress = true;
+      isCompleted = false;
+    } else if (nowMs > endMs) {
       isCompleted = true;
     }
+  } else if (!isNaN(endMs) && nowMs > endMs) {
+    isCompleted = true;
   }
 
   return { isInProgress, isCompleted };
