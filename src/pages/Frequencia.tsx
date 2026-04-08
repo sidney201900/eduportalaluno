@@ -150,26 +150,18 @@ export default function Frequencia() {
   });
 
   const sortedItems = [...mergedItems].sort((a, b) => {
-    const nowTime = now.getTime();
-    const { isInProgress: aProgress } = getLessonTimeStatus(a.lesson, now);
-    const { isInProgress: bProgress } = getLessonTimeStatus(b.lesson, now);
-    
-    // In-progress lessons always first
-    if (aProgress && !bProgress) return -1;
-    if (!aProgress && bProgress) return 1;
-    
     const dA = a.lesson.date || '';
     const dB = b.lesson.date || '';
     if (!dA) return 1;
     if (!dB) return -1;
 
-    // Then by proximity to current date/time (closest first)
+    // Ordered chronologically (closest/oldest first -> newest last)
     const dateA = parseLessonDateTime(dA, a.lesson.startTime);
     const dateB = parseLessonDateTime(dB, b.lesson.startTime);
     
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
-    return timeB - timeA; // Descending (recent first)
+    return timeA - timeB; // Ascending (Class 1, Class 2...)
   });
 
   // Collect lessons available for justification modal dropdown

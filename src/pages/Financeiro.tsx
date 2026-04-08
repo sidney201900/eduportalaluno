@@ -23,8 +23,28 @@ export default function Financeiro() {
         ]);
         const payData = await payRes.json();
         const bolData = await bolRes.json();
-        setPayments(payData.payments || []);
-        setBoletos(bolData.boletos || []);
+        
+        const fetchedPayments = payData.payments || [];
+        const fetchedBoletos = bolData.boletos || [];
+        
+        const mappedBoletos = fetchedBoletos.map((b: any) => ({
+          id: b.id || b.asaas_payment_id,
+          studentId: b.aluno_id,
+          amount: Number(b.valor || 0),
+          dueDate: b.vencimento,
+          status: b.status,
+          description: b.descricao || 'Mensalidade',
+          asaasPaymentId: b.asaas_payment_id,
+          asaasPaymentUrl: b.link_boleto,
+          transactionReceiptUrl: b.link_recibo || b.transaction_receipt_url || '',
+          discount: 0
+        }));
+
+        const existingAsaasIds = new Set(fetchedPayments.map((p: any) => p.asaasPaymentId || p.asaas_payment_id).filter(Boolean));
+        const uniqueBoletos = mappedBoletos.filter((b: any) => b.asaasPaymentId && !existingAsaasIds.has(b.asaasPaymentId));
+        
+        setPayments([...fetchedPayments, ...uniqueBoletos]);
+        setBoletos(fetchedBoletos);
       } catch (err) {
         console.error(err);
       } finally {
@@ -33,6 +53,18 @@ export default function Financeiro() {
     };
     if (token) fetchData();
   }, [token]);
+  const normalizeStatus = (status: string) => {
+    const s = status?.toLowerCase();
+    if (['paid', 'received', 'confirmed', 'pago'].includes(s)) return 'paid';
+    if (['pending', 'pendente'].includes(s)) return 'pending';
+    if (['overdue', 'atrasado'].includes(s)) return 'overdue';
+    if (['cancelled', 'cancelado'].includes(s)) return 'cancelled';
+    return s;
+  };
+
+  const isPaid = (status: string) => normalizeStatus(status) === 'paid';
+  const isPending = (status: string) => ['pending', 'overdue'].includes(normalizeStatus(status));
+
 
   const filtered = payments.filter(p => {
     if (filter === 'all') return true;
@@ -58,17 +90,7 @@ export default function Financeiro() {
     return date.toLocaleDateString('pt-BR');
   };
 
-  const normalizeStatus = (status: string) => {
-    const s = status?.toLowerCase();
-    if (['paid', 'received', 'confirmed', 'pago'].includes(s)) return 'paid';
-    if (['pending', 'pendente'].includes(s)) return 'pending';
-    if (['overdue', 'atrasado'].includes(s)) return 'overdue';
-    if (['cancelled', 'cancelado'].includes(s)) return 'cancelled';
-    return s;
-  };
 
-  const isPaid = (status: string) => normalizeStatus(status) === 'paid';
-  const isPending = (status: string) => ['pending', 'overdue'].includes(normalizeStatus(status));
 
   const getStatusBadge = (status: string) => {
     const norm = normalizeStatus(status);
