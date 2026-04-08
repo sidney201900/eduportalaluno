@@ -414,20 +414,21 @@ export default function Frequencia() {
                       <td>
                         {att && isPresent ? (() => {
                           try {
-                            const exactTimeStr = (att as any).createdAt || (att as any).created_at || (att as any).timestamp || (att.date.length > 10 ? att.date : null);
-                            if (exactTimeStr) {
-                              const d = new Date(exactTimeStr);
-                              // Garante que é uma data válida antes de formatar
-                              if (!isNaN(d.getTime())) {
-                                return (
-                                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                                    {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                );
-                              }
+                            if (!att.date || typeof att.date !== 'string') {
+                              return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
                             }
-                            // Fallback se não foi possível extrair a hora exata
-                            return <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>D/D</span>;
+                            
+                            const d = new Date(att.date);
+                            
+                            if (!isNaN(d.getTime())) {
+                              return (
+                                <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                                  {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              );
+                            }
+                            
+                            return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
                           } catch {
                             return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
                           }
