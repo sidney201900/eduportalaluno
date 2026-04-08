@@ -351,7 +351,7 @@ export default function Frequencia() {
                            }}>
                              <Clock size={12} /> EM ANDAMENTO
                            </span>
-                        ) : isCompleted ? (
+                        ) : isCompleted || new Date(lesson.date + 'T23:59:59') < now ? (
                            <span style={{
                              background: 'var(--color-success)', color: 'white',
                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
@@ -361,7 +361,7 @@ export default function Frequencia() {
                            </span>
                         ) : (
                            <span style={{
-                             background: 'var(--color-border)', color: 'var(--color-text-secondary)',
+                             background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
                            }}>
                              AGENDADA

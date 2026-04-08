@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, Check, AlertCircle, Info, Trash2 } from 'lucide-react';
+import { Bell, AlertCircle, Info, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { Notification as PortalNotification } from '../types';
 
@@ -55,17 +55,20 @@ export default function Notifications() {
     }
   };
 
-  const deleteNotification = async (id: string) => {
-    try {
-      await fetch(`/api/portal/notificacoes/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch (err) {
-      console.error(err);
-      // Fallback: remove locally even if API fails
-      setNotifications(prev => prev.filter(n => n.id !== id));
+  const deleteAllRead = async () => {
+    const readNotifs = notifications.filter(n => n.read);
+    // Remove locally first for instant UI feedback
+    setNotifications(prev => prev.filter(n => !n.read));
+    // Then fire API calls
+    for (const notif of readNotifs) {
+      try {
+        await fetch(`/api/portal/notificacoes/${notif.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -145,9 +148,27 @@ export default function Notifications() {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: 600 }}>Notificações</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-              {unreadCount} {unreadCount === 1 ? 'não lida' : 'não lidas'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                {unreadCount} {unreadCount === 1 ? 'não lida' : 'não lidas'}
+              </span>
+              {notifications.some(n => n.read) && (
+                <button
+                  onClick={deleteAllRead}
+                  title="Excluir todas as lidas"
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-danger)',
+                    cursor: 'pointer', padding: 4, borderRadius: 4,
+                    display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.7rem',
+                    opacity: 0.7, transition: 'opacity 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.7'; }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{ maxHeight: 380, overflowY: 'auto' }}>
@@ -159,33 +180,39 @@ export default function Notifications() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {notifications.map(notif => {
-                  // Detect cancel/repo keywords from title/message for visual cues
                   const msgLower = (notif.title + ' ' + notif.message).toLowerCase();
                   const isCancelamento = msgLower.includes('cancel');
                   const isReposicao = msgLower.includes('reposi');
 
                   return (
-                    <div key={notif.id} style={{
-                      padding: '1rem', borderBottom: '1px solid var(--glass-border)',
-                      background: notif.read ? 'transparent' : 'var(--bg-primary-alpha)',
-                      display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
-                      transition: 'background 0.2s',
-                    }}>
+                    <div
+                      key={notif.id}
+                      onClick={() => { if (!notif.read) markAsRead(notif.id); }}
+                      style={{
+                        padding: '1rem', borderBottom: '1px solid var(--glass-border)',
+                        background: notif.read ? 'transparent' : 'var(--bg-primary-alpha)',
+                        display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+                        transition: 'all 0.3s ease',
+                        opacity: notif.read ? 0.5 : 1,
+                        cursor: notif.read ? 'default' : 'pointer',
+                      }}
+                    >
                       <div style={{
                         padding: 8, borderRadius: '50%', flexShrink: 0,
-                        background: isCancelamento ? 'var(--bg-danger-alpha)'
+                        background: notif.read ? 'var(--color-surface-light)'
+                          : isCancelamento ? 'var(--bg-danger-alpha)'
                           : isReposicao ? 'var(--bg-success-alpha)'
                           : 'var(--bg-primary-alpha)',
                       }}>
                         {isCancelamento
-                          ? <AlertCircle size={16} color="var(--color-danger)" />
-                          : <Info size={16} color={isReposicao ? 'var(--color-success)' : 'var(--color-primary)'} />
+                          ? <AlertCircle size={16} color={notif.read ? 'var(--color-text-secondary)' : 'var(--color-danger)'} />
+                          : <Info size={16} color={notif.read ? 'var(--color-text-secondary)' : (isReposicao ? 'var(--color-success)' : 'var(--color-primary)')} />
                         }
                       </div>
                       <div style={{ flex: 1 }}>
                         <p style={{
                           fontSize: '0.8125rem', fontWeight: 600,
-                          color: isCancelamento ? 'var(--color-danger)' : 'var(--color-text)',
+                          color: notif.read ? 'var(--color-text-secondary)' : (isCancelamento ? 'var(--color-danger)' : 'var(--color-text)'),
                           marginBottom: 2,
                         }}>
                           {notif.title}
@@ -197,31 +224,12 @@ export default function Notifications() {
                           {formatDate(notif.createdAt)}
                         </span>
                       </div>
-                      {!notif.read ? (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                          title="Marcar como lida"
-                          style={{
-                            background: 'none', border: 'none', color: 'var(--color-primary)',
-                            cursor: 'pointer', padding: 4, borderRadius: 4,
-                          }}
-                        >
-                          <Check size={16} />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
-                          title="Excluir notificação"
-                          style={{
-                            background: 'none', border: 'none', color: 'var(--color-danger)',
-                            cursor: 'pointer', padding: 4, borderRadius: 4,
-                            opacity: 0.6, transition: 'opacity 0.2s',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-                          onMouseLeave={e => { e.currentTarget.style.opacity = '0.6'; }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      {!notif.read && (
+                        <div style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: 'var(--color-primary)', flexShrink: 0,
+                          marginTop: 6,
+                        }} />
                       )}
                     </div>
                   );

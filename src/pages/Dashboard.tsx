@@ -111,15 +111,18 @@ export default function Dashboard() {
     });
     if (inProgress) return { lesson: inProgress, isInProgress: true };
     
-    // Otherwise find the next upcoming lesson (closest to now)
-    const nowZero = new Date();
-    nowZero.setHours(0, 0, 0, 0);
+    // Otherwise find the next upcoming lesson that is NOT completed
     const future = data.lessons
-      .filter(l => l.status !== 'cancelled' && new Date(l.date + 'T00:00:00') >= nowZero)
+      .filter(l => {
+        if (l.status === 'cancelled') return false;
+        const { isCompleted } = getLessonTimeStatus(l, now);
+        // Exclude completed lessons — we only want truly upcoming ones
+        return !isCompleted;
+      })
       .sort((a, b) => {
-        const diffA = Math.abs(new Date(a.date + (a.startTime ? `T${a.startTime}:00` : 'T12:00:00')).getTime() - now.getTime());
-        const diffB = Math.abs(new Date(b.date + (b.startTime ? `T${b.startTime}:00` : 'T12:00:00')).getTime() - now.getTime());
-        return diffA - diffB;
+        const dateA = new Date(a.date + (a.startTime ? `T${a.startTime}:00` : 'T12:00:00')).getTime();
+        const dateB = new Date(b.date + (b.startTime ? `T${b.startTime}:00` : 'T12:00:00')).getTime();
+        return dateA - dateB; // Chronological: soonest first
       });
     return future[0] ? { lesson: future[0], isInProgress: false } : null;
   };

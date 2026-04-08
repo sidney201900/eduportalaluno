@@ -51,15 +51,52 @@ export default function Financeiro() {
     return date.toLocaleDateString('pt-BR');
   };
 
+  const normalizeStatus = (status: string) => {
+    const s = status?.toLowerCase();
+    if (['paid', 'received', 'confirmed', 'pago'].includes(s)) return 'paid';
+    if (['pending', 'pendente'].includes(s)) return 'pending';
+    if (['overdue', 'atrasado'].includes(s)) return 'overdue';
+    if (['cancelled', 'cancelado'].includes(s)) return 'cancelled';
+    return s;
+  };
+
+  const isPaid = (status: string) => normalizeStatus(status) === 'paid';
+  const isPending = (status: string) => ['pending', 'overdue'].includes(normalizeStatus(status));
+
   const getStatusBadge = (status: string) => {
+    const norm = normalizeStatus(status);
     const map: Record<string, { className: string; label: string }> = {
       paid: { className: 'badge badge-success', label: 'Pago' },
-      RECEIVED: { className: 'badge badge-success', label: 'Pago' },
       pending: { className: 'badge badge-warning', label: 'Pendente' },
       overdue: { className: 'badge badge-danger', label: 'Atrasado' },
+      cancelled: { className: 'badge badge-info', label: 'Cancelado' },
     };
-    const s = map[status] || { className: 'badge badge-info', label: status };
+    const s = map[norm] || { className: 'badge badge-info', label: status };
     return <span className={s.className}>{s.label}</span>;
+  };
+
+  const getReceiptLink = (payment: Payment): string | null => {
+    // First check if the payment object itself has the URL
+    if ((payment as any).transactionReceiptUrl) return (payment as any).transactionReceiptUrl;
+    
+    // Then look it up in the boletos table (alunos_cobrancas)
+    const boleto = boletos.find(b =>
+      b.asaas_payment_id === payment.asaasPaymentId
+    );
+    if (!boleto) return null;
+    
+    // Check multiple possible field names from the Supabase table
+    return boleto.link_recibo || boleto.transaction_receipt_url || null;
+  };
+
+  const handleOpenReceipt = (payment: Payment) => {
+    const receiptUrl = getReceiptLink(payment);
+    if (receiptUrl) {
+      window.open(receiptUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      // No receipt URL available — show local modal fallback
+      setReceiptPayment(payment);
+    }
   };
 
   const getBoletoLink = (payment: Payment) => {
@@ -71,11 +108,11 @@ export default function Financeiro() {
   };
 
   const totalPending = payments
-    .filter(p => p.status === 'pending' || p.status === 'overdue')
+    .filter(p => isPending(p.status))
     .reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
 
   const totalPaid = payments
-    .filter(p => p.status === 'paid')
+    .filter(p => isPaid(p.status))
     .reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
 
   const filters: { key: FilterType; label: string }[] = [
@@ -204,27 +241,31 @@ export default function Financeiro() {
                       </td>
                       <td>{getStatusBadge(payment.status)}</td>
                       <td>
-                        {(payment.status === 'paid' || (payment as any).status === 'RECEIVED') ? (
-                            <button
-                              onClick={() => {
-                                if ((payment as any).transactionReceiptUrl) {
-                                  window.open((payment as any).transactionReceiptUrl, '_blank');
-                                } else {
-                                  setReceiptPayment(payment);
-                                }
-                              }}
-                              className="btn-primary"
-                              style={{
-                                fontSize: '0.75rem', padding: '0.375rem 0.75rem',
-                                display: 'flex', alignItems: 'center', gap: '0.35rem',
-                                background: 'var(--color-primary)', color: 'white', border: 'none',
-                                cursor: 'pointer', borderRadius: 8, fontWeight: 500
-                              }}
-                            >
-                              <Printer size={14} />
-                              Ver/Imprimir Recibo
-                            </button>
-                        ) : link ? (
+                        {isPaid(payment.status) ? (
+                          (() => {
+                            const hasReceipt = getReceiptLink(payment);
+                            return hasReceipt || payment.asaasPaymentId ? (
+                              <button
+                                onClick={() => handleOpenReceipt(payment)}
+                                style={{
+                                  fontSize: '0.75rem', padding: '0.375rem 0.75rem',
+                                  display: 'flex', alignItems: 'center', gap: '0.35rem',
+                                  background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)',
+                                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                                  cursor: 'pointer', borderRadius: 8, fontWeight: 600,
+                                  fontFamily: 'Inter, sans-serif',
+                                  transition: 'all 0.2s ease',
+                                }}
+                              >
+                                <Printer size={14} /> Visualizar Recibo
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                ✓ Quitado
+                              </span>
+                            );
+                          })()
+                        ) : isPending(payment.status) && link ? (
                           <a
                             href={link}
                             target="_blank"

@@ -121,8 +121,11 @@ export interface Boleto {
   asaas_installment_id?: string;
   valor: number;
   vencimento: string;
+  data_pagamento?: string;
   link_boleto?: string;
   link_carne?: string;
+  link_recibo?: string;
+  transaction_receipt_url?: string;
   status: string;
   created_at: string;
 }
