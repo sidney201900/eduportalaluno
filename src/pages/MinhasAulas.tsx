@@ -60,8 +60,10 @@ export default function MinhasAulas() {
     if (aProgress && !bProgress) return -1;
     if (!aProgress && bProgress) return 1;
 
-    const diffA = Math.abs(new Date(a.date + (a.startTime ? `T${a.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
-    const diffB = Math.abs(new Date(b.date + (b.startTime ? `T${b.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
+    const timeA = a.startTime ? a.startTime.substring(0, 5) : '12:00';
+    const timeB = b.startTime ? b.startTime.substring(0, 5) : '12:00';
+    const diffA = Math.abs(new Date(`${a.date.substring(0, 10)}T${timeA}:00`).getTime() - nowTime);
+    const diffB = Math.abs(new Date(`${b.date.substring(0, 10)}T${timeB}:00`).getTime() - nowTime);
     
     return diffA - diffB;
   });

@@ -36,7 +36,7 @@ export default function Financeiro() {
 
   const filtered = payments.filter(p => {
     if (filter === 'all') return true;
-    return p.status === filter;
+    return normalizeStatus(p.status) === filter;
   });
 
   const sorted = [...filtered].sort((a, b) =>
@@ -76,16 +76,25 @@ export default function Financeiro() {
   };
 
   const getReceiptLink = (payment: Payment): string | null => {
-    // First check if the payment object itself has the URL
     if ((payment as any).transactionReceiptUrl) return (payment as any).transactionReceiptUrl;
+    if ((payment as any).transaction_receipt_url) return (payment as any).transaction_receipt_url;
     
-    // Then look it up in the boletos table (alunos_cobrancas)
-    const boleto = boletos.find(b =>
-      b.asaas_payment_id === payment.asaasPaymentId
-    );
+    const asaasId = payment.asaasPaymentId || (payment as any).asaas_payment_id;
+    
+    let boleto = null;
+    if (asaasId) {
+      boleto = boletos.find(b => b.asaas_payment_id === asaasId);
+    }
+    
+    // Fallback: match by date and amount if no ID matched
+    if (!boleto) {
+       boleto = boletos.find(b => 
+         b.vencimento === payment.dueDate && 
+         Math.abs(Number(b.valor) - (payment.amount - (payment.discount || 0))) < 1
+       );
+    }
+    
     if (!boleto) return null;
-    
-    // Check multiple possible field names from the Supabase table
     return boleto.link_recibo || boleto.transaction_receipt_url || null;
   };
 
@@ -101,9 +110,22 @@ export default function Financeiro() {
 
   const getBoletoLink = (payment: Payment) => {
     if (payment.asaasPaymentUrl) return payment.asaasPaymentUrl;
-    const boleto = boletos.find(b =>
-      b.asaas_payment_id === payment.asaasPaymentId
-    );
+    if ((payment as any).link_boleto) return (payment as any).link_boleto;
+
+    const asaasId = payment.asaasPaymentId || (payment as any).asaas_payment_id;
+    
+    let boleto = null;
+    if (asaasId) {
+      boleto = boletos.find(b => b.asaas_payment_id === asaasId);
+    }
+    
+    if (!boleto) {
+       boleto = boletos.find(b => 
+         b.vencimento === payment.dueDate && 
+         Math.abs(Number(b.valor) - (payment.amount - (payment.discount || 0))) < 1
+       );
+    }
+    
     return boleto?.link_boleto || null;
   };
 
@@ -242,29 +264,20 @@ export default function Financeiro() {
                       <td>{getStatusBadge(payment.status)}</td>
                       <td>
                         {isPaid(payment.status) ? (
-                          (() => {
-                            const hasReceipt = getReceiptLink(payment);
-                            return hasReceipt || payment.asaasPaymentId ? (
-                              <button
-                                onClick={() => handleOpenReceipt(payment)}
-                                style={{
-                                  fontSize: '0.75rem', padding: '0.375rem 0.75rem',
-                                  display: 'flex', alignItems: 'center', gap: '0.35rem',
-                                  background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)',
-                                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                                  cursor: 'pointer', borderRadius: 8, fontWeight: 600,
-                                  fontFamily: 'Inter, sans-serif',
-                                  transition: 'all 0.2s ease',
-                                }}
-                              >
-                                <Printer size={14} /> Visualizar Recibo
-                              </button>
-                            ) : (
-                              <span style={{ fontSize: '0.75rem', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                ✓ Quitado
-                              </span>
-                            );
-                          })()
+                          <button
+                            onClick={() => handleOpenReceipt(payment)}
+                            style={{
+                              fontSize: '0.75rem', padding: '0.375rem 0.75rem',
+                              display: 'flex', alignItems: 'center', gap: '0.35rem',
+                              background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              cursor: 'pointer', borderRadius: 8, fontWeight: 600,
+                              fontFamily: 'Inter, sans-serif',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <Printer size={14} /> Visualizar Recibo
+                          </button>
                         ) : isPending(payment.status) && link ? (
                           <a
                             href={link}

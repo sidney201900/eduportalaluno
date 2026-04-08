@@ -156,8 +156,10 @@ export default function Frequencia() {
     if (!aProgress && bProgress) return 1;
     
     // Then by proximity to current date/time (closest first)
-    const diffA = Math.abs(new Date(a.lesson.date + (a.lesson.startTime ? `T${a.lesson.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
-    const diffB = Math.abs(new Date(b.lesson.date + (b.lesson.startTime ? `T${b.lesson.startTime}:00` : 'T12:00:00')).getTime() - nowTime);
+    const timeA = a.lesson.startTime ? a.lesson.startTime.substring(0, 5) : '12:00';
+    const timeB = b.lesson.startTime ? b.lesson.startTime.substring(0, 5) : '12:00';
+    const diffA = Math.abs(new Date(`${a.lesson.date.substring(0, 10)}T${timeA}:00`).getTime() - nowTime);
+    const diffB = Math.abs(new Date(`${b.lesson.date.substring(0, 10)}T${timeB}:00`).getTime() - nowTime);
     return diffA - diffB;
   });
 
@@ -308,8 +310,10 @@ export default function Frequencia() {
               <thead>
                 <tr>
                   <th>Data</th>
+                  <th>Horário</th>
                   <th>Status de Aula</th>
                   <th>Presença</th>
+                  <th>Hora Presença</th>
                   <th>Justificativa</th>
                   <th>Texto da Justificativa</th>
                 </tr>
@@ -334,6 +338,15 @@ export default function Frequencia() {
                       backgroundColor: isJustificationAccepted ? 'rgba(251, 191, 36, 0.12)' : 'transparent',
                     }}>
                       <td>{formatDateFull(lesson.date)}</td>
+                      <td>
+                        {lesson.startTime ? (
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+                            {lesson.startTime.substring(0, 5)}{lesson.endTime ? ` - ${lesson.endTime.substring(0, 5)}` : ''}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
+                        )}
+                      </td>
                       <td>
                         {lesson.status === 'cancelled' ? (
                           <span style={{
@@ -387,6 +400,26 @@ export default function Frequencia() {
                           <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
                             {isCompleted ? 'Não registrado' : 'Aguardando'}
                           </span>
+                        )}
+                      </td>
+                      <td>
+                        {att && isPresent ? (() => {
+                          try {
+                            const d = new Date(att.date);
+                            // If date includes time info (not just YYYY-MM-DD)
+                            if (att.date.length > 10) {
+                              return (
+                                <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
+                                  {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              );
+                            }
+                            return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
+                          } catch {
+                            return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
+                          }
+                        })() : (
+                          <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
                         )}
                       </td>
                       <td>

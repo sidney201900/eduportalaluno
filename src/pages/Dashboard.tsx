@@ -120,9 +120,11 @@ export default function Dashboard() {
         return !isCompleted;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.date + (a.startTime ? `T${a.startTime}:00` : 'T12:00:00')).getTime();
-        const dateB = new Date(b.date + (b.startTime ? `T${b.startTime}:00` : 'T12:00:00')).getTime();
-        return dateA - dateB; // Chronological: soonest first
+        const timeA = a.startTime ? a.startTime.substring(0, 5) : '12:00';
+        const timeB = b.startTime ? b.startTime.substring(0, 5) : '12:00';
+        const dateA = new Date(`${a.date.substring(0, 10)}T${timeA}:00`).getTime();
+        const dateB = new Date(`${b.date.substring(0, 10)}T${timeB}:00`).getTime();
+        return dateA - dateB;
       });
     return future[0] ? { lesson: future[0], isInProgress: false } : null;
   };
