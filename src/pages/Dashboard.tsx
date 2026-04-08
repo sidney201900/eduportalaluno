@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { CreditCard, CalendarCheck, BookOpen, Clock, TrendingUp, AlertTriangle, CalendarClock } from 'lucide-react';
 import type { Payment, Attendance, Class, Course, Lesson } from '../types';
 import { getLessonTimeStatus } from '../lib/lessonUtils';
+import { useRealTimeDate } from '../hooks/useRealTimeDate';
 
 interface DashboardData {
   payments: Payment[];
@@ -16,6 +17,9 @@ export default function Dashboard() {
   const { student, token } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Real-time update every 30s
+  const now = useRealTimeDate(30000);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -101,7 +105,6 @@ export default function Dashboard() {
 
   const getNextOrCurrentClass = (): { lesson: Lesson; isInProgress: boolean } | null => {
     if (!data?.lessons) return null;
-    const now = new Date();
     
     // First check if any lesson is currently in progress
     const inProgress = data.lessons.find(l => {
@@ -120,10 +123,12 @@ export default function Dashboard() {
         return !isCompleted;
       })
       .sort((a, b) => {
-        const timeA = a.startTime ? a.startTime.substring(0, 5) : '12:00';
-        const timeB = b.startTime ? b.startTime.substring(0, 5) : '12:00';
-        const dateA = new Date(`${a.date.substring(0, 10)}T${timeA}:00`).getTime();
-        const dateB = new Date(`${b.date.substring(0, 10)}T${timeB}:00`).getTime();
+        const tA = a.startTime ? a.startTime.split(':') : ['12', '00'];
+        const tB = b.startTime ? b.startTime.split(':') : ['12', '00'];
+        const pA = a.date.split('-');
+        const pB = b.date.split('-');
+        const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
+        const dateB = new Date(Number(pB[0]), Number(pB[1])-1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
         return dateA - dateB;
       });
     return future[0] ? { lesson: future[0], isInProgress: false } : null;

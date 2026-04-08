@@ -21,17 +21,20 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
     return { isInProgress: false, isCompleted };
   }
 
-  const lessonDateStr = lesson.date?.substring(0, 10); // Garante YYYY-MM-DD
+  const lessonDateStr = lesson.date?.substring(0, 10);
   if (!lessonDateStr) return { isInProgress, isCompleted };
 
+  const [y, m, d] = lessonDateStr.split('-').map(Number);
+
   if (lesson.startTime && lesson.endTime) {
-    const startNorm = normalizeTime(lesson.startTime);
-    const endNorm = normalizeTime(lesson.endTime);
+    const startParts = normalizeTime(lesson.startTime).split(':').map(Number);
+    const endParts = normalizeTime(lesson.endTime).split(':').map(Number);
 
-    const startDateTime = new Date(`${lessonDateStr}T${startNorm}`);
-    const endDateTime = new Date(`${lessonDateStr}T${endNorm}`);
+    // Construtor explícito: new Date(year, monthIndex, day, hours, minutes, seconds)
+    // Isso garante que SEMPRE será interpretado no fuso horário local do navegador
+    const startDateTime = new Date(y, m - 1, d, startParts[0], startParts[1], startParts[2]);
+    const endDateTime = new Date(y, m - 1, d, endParts[0], endParts[1], endParts[2]);
 
-    // Verifica se as datas são válidas
     if (!isNaN(startDateTime.getTime()) && !isNaN(endDateTime.getTime())) {
       if (now >= startDateTime && now <= endDateTime) {
         isInProgress = true;
@@ -41,8 +44,7 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
       }
     }
   } else {
-    // Sem horários definidos — compara apenas data
-    const endOfDay = new Date(`${lessonDateStr}T23:59:59`);
+    const endOfDay = new Date(y, m - 1, d, 23, 59, 59);
     if (!isNaN(endOfDay.getTime()) && now > endOfDay) {
       isCompleted = true;
     }

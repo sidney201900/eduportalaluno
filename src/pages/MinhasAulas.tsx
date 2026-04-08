@@ -3,6 +3,7 @@ import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { Lesson } from '../types';
 import { getLessonTimeStatus } from '../lib/lessonUtils';
+import { useRealTimeDate } from '../hooks/useRealTimeDate';
 
 export default function MinhasAulas() {
   const { token } = useAuth();
@@ -50,7 +51,7 @@ export default function MinhasAulas() {
     );
   }
 
-  const now = new Date();
+  const now = useRealTimeDate(30000);
   const nowTime = now.getTime();
 
   const sortedLessons = [...lessons].sort((a, b) => {

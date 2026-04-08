@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2, AlertTriangle, ChevronDown, Clock } from 'lucide-react';
 import type { Attendance, Lesson } from '../types';
 import { getLessonTimeStatus, isLessonWithinJustificationWindow } from '../lib/lessonUtils';
+import { useRealTimeDate } from '../hooks/useRealTimeDate';
 
 export default function Frequencia() {
   const { token } = useAuth();
@@ -132,7 +133,8 @@ export default function Frequencia() {
     );
   }
 
-  const now = new Date();
+  // Update time every 30s to keep timeline ticking forward live
+  const now = useRealTimeDate(30000);
 
   // Stats calculation (based on actual attendance records)
   const totalRecords = attendance.length;
@@ -156,11 +158,13 @@ export default function Frequencia() {
     if (!aProgress && bProgress) return 1;
     
     // Then by proximity to current date/time (closest first)
-    const timeA = a.lesson.startTime ? a.lesson.startTime.substring(0, 5) : '12:00';
-    const timeB = b.lesson.startTime ? b.lesson.startTime.substring(0, 5) : '12:00';
-    const diffA = Math.abs(new Date(`${a.lesson.date.substring(0, 10)}T${timeA}:00`).getTime() - nowTime);
-    const diffB = Math.abs(new Date(`${b.lesson.date.substring(0, 10)}T${timeB}:00`).getTime() - nowTime);
-    return diffA - diffB;
+    const tA = a.lesson.startTime ? a.lesson.startTime.split(':') : ['12', '00'];
+    const tB = b.lesson.startTime ? b.lesson.startTime.split(':') : ['12', '00'];
+    const pA = a.lesson.date.split('-');
+    const pB = b.lesson.date.split('-');
+    const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
+    const dateB = new Date(Number(pB[0]), Number(pB[1])-1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
+    return Math.abs(dateA - nowTime) - Math.abs(dateB - nowTime);
   });
 
   // Collect lessons available for justification modal dropdown
