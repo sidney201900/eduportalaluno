@@ -71,11 +71,12 @@ export default function MinhasAulas() {
     const dateA = parseLessonDateTime(dA, a.startTime);
     const dateB = parseLessonDateTime(dB, b.startTime);
     
-    // Check for NaN if date splitting failed, fallback to Infinity
-    const diffA = isNaN(dateA) ? Infinity : Math.abs(dateA - nowTime);
-    const diffB = isNaN(dateB) ? Infinity : Math.abs(dateB - nowTime);
+    const timeA = isNaN(dateA) ? 0 : dateA;
+    const timeB = isNaN(dateB) ? 0 : dateB;
     
-    return diffA - diffB;
+    // Ascendente para aulas futuras? Não, vamos usar cronológico normal onde as aulas estão na ordem.
+    // ASCENDING (primeira aula no topo, última no fim)
+    return timeA - timeB;
   });
 
   return (

@@ -39,9 +39,16 @@ export default function Financeiro() {
     return normalizeStatus(p.status) === filter;
   });
 
-  const sorted = [...filtered].sort((a, b) =>
-    new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-  );
+  const sorted = [...filtered].sort((a, b) => {
+    // 1. Pendentes/Atrasados primeiro
+    const aPending = isPending(a.status);
+    const bPending = isPending(b.status);
+    if (aPending && !bPending) return -1;
+    if (!aPending && bPending) return 1;
+
+    // 2. Data da primeira para a ultima (Ascendente)
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  });
 
   const formatCurrency = (val: number) =>
     val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

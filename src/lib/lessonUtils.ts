@@ -30,7 +30,7 @@ export function parseLessonDateTime(dateStr: string, timeStr?: string): number {
   
   let h = 12, min = 0, s = 0;
   if (timeStr && typeof timeStr === 'string') {
-    const tParts = timeStr.split(':');
+    const tParts = timeStr.trim().split(':');
     h = Number(tParts[0] || 12); min = Number(tParts[1] || 0); s = Number(tParts[2] || 0);
   }
   
@@ -42,15 +42,26 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
   let isInProgress = false;
 
   if (lesson.status === 'cancelled' || lesson.status === 'rescheduled') {
-    return { isInProgress: false, isCompleted };
+    return { isInProgress: false, isCompleted: true };
   }
 
   const lessonDateStr = typeof lesson.date === 'string' ? lesson.date.substring(0, 10) : '';
   if (!lessonDateStr) return { isInProgress, isCompleted };
 
-  const startMs = parseLessonDateTime(lessonDateStr, lesson.startTime);
-  const endMs = parseLessonDateTime(lessonDateStr, lesson.endTime || '23:59:59');
+  let startMs = parseLessonDateTime(lessonDateStr, lesson.startTime);
+  let endMs = parseLessonDateTime(lessonDateStr, lesson.endTime || '23:59:59');
   const nowMs = now.getTime();
+
+  if (!isNaN(startMs) && !isNaN(endMs) && startMs > endMs) {
+    if ((startMs - endMs) > 12 * 3600 * 1000) {
+      // In case 14:00 to 01:00 next day (though rare)
+      endMs += 24 * 3600 * 1000;
+    } else {
+      const temp = startMs;
+      startMs = endMs;
+      endMs = temp;
+    }
+  }
 
   if (!isNaN(startMs) && !isNaN(endMs)) {
     if (nowMs >= startMs && nowMs <= endMs) {

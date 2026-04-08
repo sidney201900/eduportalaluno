@@ -167,9 +167,9 @@ export default function Frequencia() {
     const dateA = parseLessonDateTime(dA, a.lesson.startTime);
     const dateB = parseLessonDateTime(dB, b.lesson.startTime);
     
-    const diffA = isNaN(dateA) ? Infinity : Math.abs(dateA - nowTime);
-    const diffB = isNaN(dateB) ? Infinity : Math.abs(dateB - nowTime);
-    return diffA - diffB;
+    const timeA = isNaN(dateA) ? 0 : dateA;
+    const timeB = isNaN(dateB) ? 0 : dateB;
+    return timeB - timeA; // Descending (recent first)
   });
 
   // Collect lessons available for justification modal dropdown
@@ -364,6 +364,13 @@ export default function Frequencia() {
                           }}>
                             CANCELADA
                           </span>
+                        ) : lesson.status === 'rescheduled' ? (
+                           <span style={{
+                             background: 'var(--color-warning)', color: 'white',
+                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                           }}>
+                             REAGENDADA
+                           </span>
                         ) : isInProgress ? (
                            <span style={{
                              background: 'var(--color-info)', color: 'white',
