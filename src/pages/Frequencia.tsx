@@ -169,7 +169,10 @@ export default function Frequencia() {
     const pB = dB.split('-');
     const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
     const dateB = new Date(Number(pB[0]), Number(pB[1])-1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
-    return Math.abs(dateA - nowTime) - Math.abs(dateB - nowTime);
+    
+    const diffA = isNaN(dateA) ? Infinity : Math.abs(dateA - nowTime);
+    const diffB = isNaN(dateB) ? Infinity : Math.abs(dateB - nowTime);
+    return diffA - diffB;
   });
 
   // Collect lessons available for justification modal dropdown

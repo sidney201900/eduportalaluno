@@ -134,7 +134,10 @@ export default function Dashboard() {
         const pB = dB.split('-');
         const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
         const dateB = new Date(Number(pB[0]), Number(pB[1])-1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
-        return dateA - dateB;
+        
+        const diffA = isNaN(dateA) ? Infinity : dateA;
+        const diffB = isNaN(dateB) ? Infinity : dateB;
+        return diffA - diffB;
       });
     return future[0] ? { lesson: future[0], isInProgress: false } : null;
   };

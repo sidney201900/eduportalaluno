@@ -68,8 +68,17 @@ export default function MinhasAulas() {
 
     const timeA = a.startTime ? a.startTime.substring(0, 5) : '12:00';
     const timeB = b.startTime ? b.startTime.substring(0, 5) : '12:00';
-    const diffA = Math.abs(new Date(`${dA.substring(0, 10)}T${timeA}:00`).getTime() - nowTime);
-    const diffB = Math.abs(new Date(`${dB.substring(0, 10)}T${timeB}:00`).getTime() - nowTime);
+    const tA = timeA.split(':');
+    const tB = timeB.split(':');
+    const pA = dA.split('-');
+    const pB = dB.split('-');
+
+    const dateA = new Date(Number(pA[0]), Number(pA[1]) - 1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
+    const dateB = new Date(Number(pB[0]), Number(pB[1]) - 1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
+    
+    // Check for NaN if date splitting failed, fallback to 0
+    const diffA = isNaN(dateA) ? Infinity : Math.abs(dateA - nowTime);
+    const diffB = isNaN(dateB) ? Infinity : Math.abs(dateB - nowTime);
     
     return diffA - diffB;
   });
