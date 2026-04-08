@@ -9,6 +9,9 @@ export default function MinhasAulas() {
   const { token } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // MUST be called logically at the top level
+  const now = useRealTimeDate(30000);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,7 +54,6 @@ export default function MinhasAulas() {
     );
   }
 
-  const now = useRealTimeDate(30000);
   const nowTime = now.getTime();
 
   const sortedLessons = [...lessons].sort((a, b) => {

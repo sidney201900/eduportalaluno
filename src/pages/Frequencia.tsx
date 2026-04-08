@@ -20,6 +20,10 @@ export default function Frequencia() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Update time every 30s to keep timeline ticking forward live
+  // This hook MUST be unconditionally called at the top level
+  const now = useRealTimeDate(30000);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -132,9 +136,6 @@ export default function Frequencia() {
       </div>
     );
   }
-
-  // Update time every 30s to keep timeline ticking forward live
-  const now = useRealTimeDate(30000);
 
   // Stats calculation (based on actual attendance records)
   const totalRecords = attendance.length;
