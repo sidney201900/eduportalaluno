@@ -27,23 +27,10 @@ export default function Financeiro() {
         const fetchedPayments = payData.payments || [];
         const fetchedBoletos = bolData.boletos || [];
         
-        const mappedBoletos = fetchedBoletos.map((b: any) => ({
-          id: b.id || b.asaas_payment_id,
-          studentId: b.aluno_id,
-          amount: Number(b.valor || 0),
-          dueDate: b.vencimento,
-          status: b.status,
-          description: b.descricao || 'Mensalidade',
-          asaasPaymentId: b.asaas_payment_id,
-          asaasPaymentUrl: b.link_boleto,
-          transactionReceiptUrl: b.link_recibo || b.transaction_receipt_url || '',
-          discount: 0
-        }));
-
-        const existingAsaasIds = new Set(fetchedPayments.map((p: any) => p.asaasPaymentId || p.asaas_payment_id).filter(Boolean));
-        const uniqueBoletos = mappedBoletos.filter((b: any) => b.asaasPaymentId && !existingAsaasIds.has(b.asaasPaymentId));
-        
-        setPayments([...fetchedPayments, ...uniqueBoletos]);
+        // We use only the detailed payments list (JSON source) as the primary data
+        // to show labels like "Parcela 1/3". The boletos (Supabase source) are 
+        // kept only for the PDF link lookup in getBoletoLink.
+        setPayments(fetchedPayments);
         setBoletos(fetchedBoletos);
       } catch (err) {
         console.error(err);

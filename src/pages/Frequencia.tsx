@@ -159,9 +159,10 @@ export default function Frequencia() {
     const dateA = parseLessonDateTime(dA, a.lesson.startTime);
     const dateB = parseLessonDateTime(dB, b.lesson.startTime);
     
+    // Recent first (Today/Future at top of history)
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
-    return timeA - timeB; // Ascending (Class 1, Class 2...)
+    return timeB - timeA; // Descending (Most recent at top)
   });
 
   // Collect lessons available for justification modal dropdown

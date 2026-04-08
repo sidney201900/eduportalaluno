@@ -57,12 +57,6 @@ export default function MinhasAulas() {
   const nowTime = now.getTime();
 
   const sortedLessons = [...lessons].sort((a, b) => {
-    const { isInProgress: aProgress } = getLessonTimeStatus(a, now);
-    const { isInProgress: bProgress } = getLessonTimeStatus(b, now);
-
-    if (aProgress && !bProgress) return -1;
-    if (!aProgress && bProgress) return 1;
-
     const dA = a.date || '';
     const dB = b.date || '';
     if (!dA) return 1;
@@ -74,9 +68,7 @@ export default function MinhasAulas() {
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
     
-    // Ascendente para aulas futuras? Não, vamos usar cronológico normal onde as aulas estão na ordem.
-    // ASCENDING (primeira aula no topo, última no fim)
-    return timeA - timeB;
+    return timeB - timeA; // Descending (Newest/closest to now at top)
   });
 
   return (

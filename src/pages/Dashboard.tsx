@@ -114,28 +114,21 @@ export default function Dashboard() {
     });
     if (inProgress) return { lesson: inProgress, isInProgress: true };
     
-    // Otherwise find the next upcoming lesson that is NOT completed
     const future = data.lessons
       .filter(l => {
         if (l.status === 'cancelled') return false;
         const { isCompleted } = getLessonTimeStatus(l, now);
-        // Exclude completed lessons — we only want truly upcoming ones
         return !isCompleted;
       })
       .sort((a, b) => {
-        const dA = a.date || '';
-        const dB = b.date || '';
-        if (!dA) return 1;
-        if (!dB) return -1;
+        const dateA = parseLessonDateTime(a.date, a.startTime);
+        const dateB = parseLessonDateTime(b.date, b.startTime);
         
-        const dateA = parseLessonDateTime(dA, a.startTime);
-        const dateB = parseLessonDateTime(dB, b.startTime);
-        
-        const diffA = isNaN(dateA) ? Infinity : dateA;
-        const diffB = isNaN(dateB) ? Infinity : dateB;
-        return diffA - diffB;
+        const diffA = Math.abs((dateA || 0) - now.getTime());
+        const diffB = Math.abs((dateB || 0) - now.getTime());
+        return diffA - diffB; // Closest to now first
       });
-    return future[0] ? { lesson: future[0], isInProgress: false } : null;
+    return future[0] ? { lesson: future[0], isInProgress: getLessonTimeStatus(future[0], now).isInProgress } : null;
   };
 
   const formatTime = (t?: string) => (t && typeof t === 'string') ? t.substring(0, 5) : '';
