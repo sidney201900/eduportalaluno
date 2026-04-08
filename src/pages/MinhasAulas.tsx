@@ -61,10 +61,15 @@ export default function MinhasAulas() {
     if (aProgress && !bProgress) return -1;
     if (!aProgress && bProgress) return 1;
 
+    const dA = a.date || '';
+    const dB = b.date || '';
+    if (!dA) return 1;
+    if (!dB) return -1;
+
     const timeA = a.startTime ? a.startTime.substring(0, 5) : '12:00';
     const timeB = b.startTime ? b.startTime.substring(0, 5) : '12:00';
-    const diffA = Math.abs(new Date(`${a.date.substring(0, 10)}T${timeA}:00`).getTime() - nowTime);
-    const diffB = Math.abs(new Date(`${b.date.substring(0, 10)}T${timeB}:00`).getTime() - nowTime);
+    const diffA = Math.abs(new Date(`${dA.substring(0, 10)}T${timeA}:00`).getTime() - nowTime);
+    const diffB = Math.abs(new Date(`${dB.substring(0, 10)}T${timeB}:00`).getTime() - nowTime);
     
     return diffA - diffB;
   });

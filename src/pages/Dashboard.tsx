@@ -123,10 +123,15 @@ export default function Dashboard() {
         return !isCompleted;
       })
       .sort((a, b) => {
+        const dA = a.date || '';
+        const dB = b.date || '';
+        if (!dA) return 1;
+        if (!dB) return -1;
+        
         const tA = a.startTime ? a.startTime.split(':') : ['12', '00'];
         const tB = b.startTime ? b.startTime.split(':') : ['12', '00'];
-        const pA = a.date.split('-');
-        const pB = b.date.split('-');
+        const pA = dA.split('-');
+        const pB = dB.split('-');
         const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
         const dateB = new Date(Number(pB[0]), Number(pB[1])-1, Number(pB[2]), Number(tB[0]), Number(tB[1])).getTime();
         return dateA - dateB;
