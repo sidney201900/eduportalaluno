@@ -128,8 +128,10 @@ export default function Dashboard() {
         if (!dA) return 1;
         if (!dB) return -1;
         
-        const tA = a.startTime ? a.startTime.split(':') : ['12', '00'];
-        const tB = b.startTime ? b.startTime.split(':') : ['12', '00'];
+        const timeA = typeof a.startTime === 'string' ? a.startTime.substring(0, 5) : '12:00';
+        const timeB = typeof b.startTime === 'string' ? b.startTime.substring(0, 5) : '12:00';
+        const tA = timeA.split(':');
+        const tB = timeB.split(':');
         const pA = dA.split('-');
         const pB = dB.split('-');
         const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
@@ -142,7 +144,7 @@ export default function Dashboard() {
     return future[0] ? { lesson: future[0], isInProgress: false } : null;
   };
 
-  const formatTime = (t?: string) => t ? t.substring(0, 5) : '';
+  const formatTime = (t?: string) => (t && typeof t === 'string') ? t.substring(0, 5) : '';
 
   const replacements = getNext7DaysReplacements();
   const nextClassInfo = getNextOrCurrentClass();

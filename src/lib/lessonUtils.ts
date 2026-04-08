@@ -5,7 +5,7 @@ import { Lesson } from '../types';
  * Aceita: "14:00", "14:00:00", "9:30", etc.
  */
 function normalizeTime(time: string): string {
-  // Remove segundos extras e garante formato consistente
+  if (!time || typeof time !== 'string') return '00:00:00';
   const parts = time.trim().split(':');
   const hours = (parts[0] || '00').padStart(2, '0');
   const minutes = (parts[1] || '00').padStart(2, '0');
@@ -21,7 +21,7 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
     return { isInProgress: false, isCompleted };
   }
 
-  const lessonDateStr = lesson.date?.substring(0, 10);
+  const lessonDateStr = typeof lesson.date === 'string' ? lesson.date.substring(0, 10) : '';
   if (!lessonDateStr) return { isInProgress, isCompleted };
 
   const [y, m, d] = lessonDateStr.split('-').map(Number);
@@ -54,6 +54,7 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
 }
 
 export function isLessonWithinJustificationWindow(lessonDate: string, now = new Date()) {
+  if (!lessonDate || typeof lessonDate !== 'string') return false;
   const d = new Date(lessonDate.substring(0, 10) + 'T12:00:00');
 
   const minDate = new Date(now);

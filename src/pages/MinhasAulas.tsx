@@ -38,7 +38,7 @@ export default function MinhasAulas() {
   };
 
   const formatTime = (timeStr?: string) => {
-    if (!timeStr) return '';
+    if (!timeStr || typeof timeStr !== 'string') return '';
     return timeStr.substring(0, 5);
   };
 
@@ -66,8 +66,8 @@ export default function MinhasAulas() {
     if (!dA) return 1;
     if (!dB) return -1;
 
-    const timeA = a.startTime ? a.startTime.substring(0, 5) : '12:00';
-    const timeB = b.startTime ? b.startTime.substring(0, 5) : '12:00';
+    const timeA = typeof a.startTime === 'string' ? a.startTime.substring(0, 5) : '12:00';
+    const timeB = typeof b.startTime === 'string' ? b.startTime.substring(0, 5) : '12:00';
     const tA = timeA.split(':');
     const tB = timeB.split(':');
     const pA = dA.split('-');

@@ -144,7 +144,7 @@ export default function Frequencia() {
 
   // Merge lessons and attendance to show a complete history
   const mergedItems = lessons.map(lesson => {
-    const att = attendance.find(a => a.date.substring(0, 10) === lesson.date);
+    const att = attendance.find(a => a.date && typeof a.date === 'string' && a.date.substring(0, 10) === lesson.date);
     return { lesson, attendance: att };
   });
 
@@ -163,8 +163,10 @@ export default function Frequencia() {
     if (!dB) return -1;
 
     // Then by proximity to current date/time (closest first)
-    const tA = a.lesson.startTime ? a.lesson.startTime.split(':') : ['12', '00'];
-    const tB = b.lesson.startTime ? b.lesson.startTime.split(':') : ['12', '00'];
+    const timeA = typeof a.lesson.startTime === 'string' ? a.lesson.startTime.substring(0, 5) : '12:00';
+    const timeB = typeof b.lesson.startTime === 'string' ? b.lesson.startTime.substring(0, 5) : '12:00';
+    const tA = timeA.split(':');
+    const tB = timeB.split(':');
     const pA = dA.split('-');
     const pB = dB.split('-');
     const dateA = new Date(Number(pA[0]), Number(pA[1])-1, Number(pA[2]), Number(tA[0]), Number(tA[1])).getTime();
@@ -351,9 +353,9 @@ export default function Frequencia() {
                     }}>
                       <td>{formatDateFull(lesson.date)}</td>
                       <td>
-                        {lesson.startTime ? (
+                        {typeof lesson.startTime === 'string' ? (
                           <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                            {lesson.startTime.substring(0, 5)}{lesson.endTime ? ` - ${lesson.endTime.substring(0, 5)}` : ''}
+                            {lesson.startTime.substring(0, 5)}{typeof lesson.endTime === 'string' ? ` - ${lesson.endTime.substring(0, 5)}` : ''}
                           </span>
                         ) : (
                           <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
