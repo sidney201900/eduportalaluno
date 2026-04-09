@@ -69,7 +69,7 @@ export default function Dashboard() {
   const totalPending = pendingPayments.reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
 
   const totalAttendance = data?.attendance.length || 0;
-  const presences = data?.attendance.filter(a => a.type === 'presence' && a.verified).length || 0;
+  const presences = data?.attendance.filter(a => a.type === 'presence').length || 0;
   const frequencyPercent = totalAttendance > 0 ? Math.round((presences / totalAttendance) * 100) : 100;
 
   const nextDue = pendingPayments

@@ -140,7 +140,7 @@ export default function Frequencia() {
 
   // Stats calculation (based on actual attendance records)
   const totalRecords = attendance.length;
-  const presences = attendance.filter(a => a.type === 'presence' && a.verified).length;
+  const presences = attendance.filter(a => a.type === 'presence').length;
   const absences = totalRecords - presences;
   const percentage = totalRecords > 0 ? Math.round((presences / totalRecords) * 100) : 100;
 
@@ -178,7 +178,7 @@ export default function Frequencia() {
       return a.date.substring(0, 10) === lessonDate;
     });
     if (att) {
-      if (att.type === 'presence' && att.verified) return false;
+      if (att.type === 'presence') return false;
       if (att.justification) return false;
     }
     return true;
@@ -333,7 +333,7 @@ export default function Frequencia() {
               <tbody>
                 {sortedItems.map((item, idx) => {
                   const { lesson, attendance: att } = item;
-                  const isPresent = att ? (att.type === 'presence' && att.verified === true) : false;
+                  const isPresent = att ? att.type === 'presence' : false;
                   const justText = parseJustification(att?.justification);
                   const isJustificationAccepted = att?.justificationAccepted === true;
                   const dateStr = lesson.date;

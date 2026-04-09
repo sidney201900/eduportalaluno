@@ -272,7 +272,7 @@ app.post('/api/portal/frequencia/justificar', authMiddleware, async (req, res) =
     if (recordIndex !== -1) {
       // Record exists — check if it's a presence
       const existing = attendance[recordIndex];
-      if (existing.type === 'presence' || existing.verified) {
+      if (existing.type === 'presence') {
         return res.status(400).json({ error: 'Não é possível justificar uma presença' });
       }
       // Update with justification
