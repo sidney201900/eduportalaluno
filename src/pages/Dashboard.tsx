@@ -113,7 +113,7 @@ export default function Dashboard() {
   const getNextOrCurrentClass = (): { lesson: Lesson; isInProgress: boolean } | null => {
     if (!data?.lessons || data.lessons.length === 0) return null;
     
-    const activeLessons = data.lessons.filter(l => l.status !== 'cancelled' && l.status !== 'rescheduled');
+    const activeLessons = data.lessons.filter(l => l.status !== 'cancelled');
     
     // Normalize "now" date
     const nowNorm = getNormalizedDate(now.toISOString());

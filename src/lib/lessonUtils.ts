@@ -71,7 +71,7 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
   let isCompleted = lesson.status === 'completed';
   let isInProgress = false;
 
-  if (lesson.status === 'cancelled' || lesson.status === 'rescheduled') {
+  if (lesson.status === 'cancelled') {
     return { isInProgress: false, isCompleted: true };
   }
 

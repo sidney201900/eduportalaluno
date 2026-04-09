@@ -175,7 +175,7 @@ export default function Frequencia() {
     const lessonDate = getNormalizedDate(l.date || '');
     const att = attendance.find(a => {
       if (!a.date || typeof a.date !== 'string') return false;
-      return a.date.substring(0, 10) === lessonDate;
+      return getNormalizedDate(a.date) === lessonDate;
     });
     if (att) {
       if (att.type === 'presence') return false;
@@ -369,13 +369,6 @@ export default function Frequencia() {
                           }}>
                             CANCELADA
                           </span>
-                        ) : lesson.status === 'rescheduled' ? (
-                           <span style={{
-                             background: 'var(--color-warning)', color: 'white',
-                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
-                           }}>
-                             REAGENDADA
-                           </span>
                         ) : isInProgress ? (
                            <span className="animate-pulse" style={{
                              background: 'var(--color-info)', color: 'white',
@@ -383,6 +376,13 @@ export default function Frequencia() {
                              display: 'inline-flex', alignItems: 'center', gap: 4,
                            }}>
                              <Clock size={12} /> • AULA EM ANDAMENTO
+                           </span>
+                        ) : lesson.status === 'rescheduled' ? (
+                           <span style={{
+                             background: 'var(--color-warning)', color: 'white',
+                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                           }}>
+                             REAGENDADA
                            </span>
                         ) : isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime() ? (
                            <span style={{
