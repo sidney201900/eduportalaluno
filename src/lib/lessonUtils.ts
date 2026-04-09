@@ -24,7 +24,11 @@ export function parseLessonDateTime(dateStr: string, timeStr?: string, defaultHo
     d = Number(parts[0]); m = Number(parts[1]) - 1; y = Number(parts[2]);
   } else {
     const parts = cleanDateStr.split('-');
-    y = Number(parts[0]); m = Number(parts[1]) - 1; d = Number(parts[2]);
+    if (parts[0] && parts[0].length === 4) {
+      y = Number(parts[0]); m = Number(parts[1]) - 1; d = Number(parts[2]);
+    } else {
+      d = Number(parts[0]); m = Number(parts[1]) - 1; y = Number(parts[2]);
+    }
   }
   
   if (isNaN(y) || isNaN(m) || isNaN(d)) return NaN;
@@ -89,8 +93,11 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
 export function isLessonWithinJustificationWindow(lessonDate: string, now = new Date()) {
   if (!lessonDate || typeof lessonDate !== 'string') return false;
   
-  // Lesson date at noon to avoid boundary issues
-  const d = new Date(lessonDate.substring(0, 10) + 'T12:00:00');
+  // Use robust parser instead of new Date() to handle DD-MM-YYYY
+  const lessonMs = parseLessonDateTime(lessonDate, '12:00', 12);
+  if (isNaN(lessonMs)) return false;
+  
+  const d = new Date(lessonMs);
 
   // 1 day before
   const minDate = new Date(now);

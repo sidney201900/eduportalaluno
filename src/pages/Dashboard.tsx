@@ -69,7 +69,7 @@ export default function Dashboard() {
   const totalPending = pendingPayments.reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
 
   const totalAttendance = data?.attendance.length || 0;
-  const presences = data?.attendance.filter(a => a.type === 'presence' || a.verified).length || 0;
+  const presences = data?.attendance.filter(a => a.type === 'presence' && a.verified).length || 0;
   const frequencyPercent = totalAttendance > 0 ? Math.round((presences / totalAttendance) * 100) : 100;
 
   const nextDue = pendingPayments
@@ -92,14 +92,19 @@ export default function Dashboard() {
 
   const getNext7DaysReplacements = () => {
     if (!data?.lessons) return [];
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const in7Days = new Date(now);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const in7Days = new Date(today);
     in7Days.setDate(in7Days.getDate() + 7);
     return data.lessons.filter(l => {
       if (l.status === 'cancelled') return false;
-      const classDate = new Date(l.date + 'T00:00:00');
-      return l.type === 'reposicao' && classDate >= now && classDate <= in7Days;
+      const parsedMs = parseLessonDateTime(l.date, '00:00', 0);
+      if (isNaN(parsedMs)) return false;
+      
+      const classDate = new Date(parsedMs);
+      classDate.setHours(0, 0, 0, 0);
+      
+      return l.type === 'reposicao' && classDate >= today && classDate <= in7Days;
     });
   };
 

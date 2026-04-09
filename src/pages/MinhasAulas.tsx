@@ -34,7 +34,9 @@ export default function MinhasAulas() {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
     try {
-      const date = new Date(dateStr + 'T12:00:00');
+      const ms = parseLessonDateTime(dateStr, '12:00', 12);
+      if (isNaN(ms)) return dateStr;
+      const date = new Date(ms);
       return date.toLocaleDateString('pt-BR');
     } catch {
       return dateStr;

@@ -137,7 +137,10 @@ export default function Financeiro() {
   };
 
   const getEffectiveValue = (payment: Payment) => {
-    // Try to find matching boleto from Supabase sync to get updated value (interest/fines)
+    const basePagar = (payment.amount || 0) - (payment.discount || 0);
+    const status = normalizeStatus(payment.status);
+
+    // Try to find matching boleto from Supabase sync 
     const asaasId = payment.asaasPaymentId || (payment as any).asaas_payment_id;
     let boleto = null;
     if (asaasId) {
@@ -147,15 +150,21 @@ export default function Financeiro() {
     if (!boleto) {
        boleto = boletos.find(b => 
          (b as any).vencimento === payment.dueDate && 
-         Math.abs(Number((b as any).valor) - (payment.amount - (payment.discount || 0))) < 10
+         Math.abs(Number((b as any).valor) - payment.amount) < 5
        );
     }
     
+    // If we have a boleto and it is overdue, use its valor (contains interest/fines)
+    // Otherwise, if it's paid, use the value actually paid.
     if (boleto && (boleto as any).valor) {
-      return Number((boleto as any).valor);
+      const bValue = Number((boleto as any).valor);
+      if (status === 'overdue' || status === 'paid') {
+        return bValue;
+      }
     }
     
-    return payment.amount - (payment.discount || 0);
+    // Default: use the discounted base value
+    return basePagar;
   };
 
   const totalPending = payments

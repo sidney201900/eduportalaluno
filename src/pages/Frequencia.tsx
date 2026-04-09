@@ -140,7 +140,7 @@ export default function Frequencia() {
 
   // Stats calculation (based on actual attendance records)
   const totalRecords = attendance.length;
-  const presences = attendance.filter(a => a.type === 'presence' || a.verified).length;
+  const presences = attendance.filter(a => a.type === 'presence' && a.verified).length;
   const absences = totalRecords - presences;
   const percentage = totalRecords > 0 ? Math.round((presences / totalRecords) * 100) : 100;
 
@@ -168,12 +168,17 @@ export default function Frequencia() {
   const justifiableLessons = lessons.filter(l => {
     if (l.status === 'cancelled') return false;
     
-    // Check window
+    // Check window (uses parseLessonDateTime internally now)
     if (!isLessonWithinJustificationWindow(l.date, now)) return false;
     
-    const att = attendance.find(a => a.date.substring(0, 10) === l.date);
+    // Normalize lesson date for comparison
+    const lessonDate = (l.date || '').substring(0, 10);
+    const att = attendance.find(a => {
+      if (!a.date || typeof a.date !== 'string') return false;
+      return a.date.substring(0, 10) === lessonDate;
+    });
     if (att) {
-      if (att.type === 'presence' || att.verified) return false;
+      if (att.type === 'presence' && att.verified) return false;
       if (att.justification) return false;
     }
     return true;
@@ -181,8 +186,9 @@ export default function Frequencia() {
 
   const formatDate = (d: string) => {
     try {
-      const date = new Date(d.length === 10 ? d + 'T12:00:00' : d);
-      return date.toLocaleDateString('pt-BR');
+      const ms = parseLessonDateTime(d, '12:00', 12);
+      if (isNaN(ms)) return d;
+      return new Date(ms).toLocaleDateString('pt-BR');
     } catch {
       return d;
     }
@@ -190,8 +196,9 @@ export default function Frequencia() {
 
   const formatDateFull = (d: string) => {
     try {
-      const date = new Date(d.length === 10 ? d + 'T12:00:00' : d);
-      return date.toLocaleDateString('pt-BR', {
+      const ms = parseLessonDateTime(d, '12:00', 12);
+      if (isNaN(ms)) return d;
+      return new Date(ms).toLocaleDateString('pt-BR', {
         weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
       });
     } catch {
@@ -326,7 +333,7 @@ export default function Frequencia() {
               <tbody>
                 {sortedItems.map((item, idx) => {
                   const { lesson, attendance: att } = item;
-                  const isPresent = att ? (att.type === 'presence' || att.verified) : false;
+                  const isPresent = att ? (att.type === 'presence' && att.verified === true) : false;
                   const justText = parseJustification(att?.justification);
                   const isJustificationAccepted = att?.justificationAccepted === true;
                   const dateStr = lesson.date;
@@ -542,10 +549,14 @@ export default function Frequencia() {
                   >
                     <option value="">— Selecione a data da aula —</option>
                     {justifiableLessons
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .sort((a, b) => {
+                        const msA = parseLessonDateTime(a.date, a.startTime);
+                        const msB = parseLessonDateTime(b.date, b.startTime);
+                        return (isNaN(msB) ? 0 : msB) - (isNaN(msA) ? 0 : msA);
+                      })
                       .map(l => (
                         <option key={l.id} value={l.date}>
-                          {formatDateFull(l.date)}
+                          {formatDateFull(l.date)}{l.startTime ? ` — ${l.startTime.substring(0, 5)}` : ''}{l.endTime ? ` às ${l.endTime.substring(0, 5)}` : ''}
                         </option>
                       ))
                     }
