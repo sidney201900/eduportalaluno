@@ -365,11 +365,10 @@ export default function Frequencia() {
                              REAGENDADA
                            </span>
                         ) : isInProgress ? (
-                           <span style={{
+                           <span className="animate-pulse" style={{
                              background: 'var(--color-info)', color: 'white',
                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                             animation: 'blink-status 1.5s infinite'
                            }}>
                              <Clock size={12} /> EM ANDAMENTO
                            </span>

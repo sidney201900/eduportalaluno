@@ -169,11 +169,10 @@ export default function MinhasAulas() {
                     )}
 
                     {isInProgress && !isCancelled && !isRescheduled && (
-                      <span style={{
+                      <span className="animate-pulse" style={{
                         background: 'var(--color-info)', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
                         display: 'flex', alignItems: 'center', gap: 4,
-                        animation: 'blink-status 1.5s infinite'
                       }}>
                         <Clock size={12} /> EM ANDAMENTO
                       </span>

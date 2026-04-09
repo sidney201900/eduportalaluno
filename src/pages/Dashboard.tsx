@@ -246,12 +246,11 @@ export default function Dashboard() {
                 </p>
               )}
               {isCurrentlyInProgress && (
-                <span style={{
+                <span className="animate-pulse" style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                   marginTop: '0.75rem', padding: '4px 10px', borderRadius: 6,
                   background: 'var(--color-info)', color: 'white',
                   fontSize: '0.7rem', fontWeight: 600,
-                  animation: 'blink-status 1.5s infinite',
                 }}>
                   <Clock size={12} /> EM ANDAMENTO
                 </span>

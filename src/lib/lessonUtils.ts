@@ -79,14 +79,18 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
 
 export function isLessonWithinJustificationWindow(lessonDate: string, now = new Date()) {
   if (!lessonDate || typeof lessonDate !== 'string') return false;
+  
+  // Lesson date at noon to avoid boundary issues
   const d = new Date(lessonDate.substring(0, 10) + 'T12:00:00');
 
+  // 1 day before
   const minDate = new Date(now);
-  minDate.setDate(now.getDate() - 2);
+  minDate.setDate(now.getDate() - 1);
   minDate.setHours(0, 0, 0, 0);
 
+  // 1 day after
   const maxDate = new Date(now);
-  maxDate.setDate(now.getDate() + 3);
+  maxDate.setDate(now.getDate() + 1);
   maxDate.setHours(23, 59, 59, 999);
 
   return d >= minDate && d <= maxDate;
