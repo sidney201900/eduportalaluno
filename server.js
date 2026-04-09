@@ -294,10 +294,10 @@ app.post('/api/portal/frequencia/justificar', authMiddleware, async (req, res) =
     
     // Create notification for the admin (visible in EduManager)
     notifications.push({
-      id: `notif-just-${Date.now()}`,
-      studentId: 'admin', // special: for admin visibility
-      title: `Justificativa de Falta — ${student?.name || req.user.name}`,
-      message: `O aluno ${student?.name || req.user.name} (${req.user.enrollmentNumber}) justificou a falta do dia ${new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')}. Motivo: ${justification.trim().substring(0, 100)}${justification.trim().length > 100 ? '...' : ''}`,
+      id: `notif-${Date.now()}`,
+      studentId: req.user.studentId,
+      title: 'Nova Justificativa de Falta',
+      message: `O aluno ${student?.name || req.user.name} enviou uma justificativa para a aula de ${new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')}.`,
       read: false,
       createdAt: new Date().toISOString(),
     });
@@ -366,10 +366,20 @@ app.get('/api/portal/aulas', authMiddleware, async (req, res) => {
     const student = (schoolData.students || []).find(s => s.id === req.user.studentId);
     if (!student) return res.json({ lessons: [] });
 
+    const parseDateHelper = (dStr) => {
+      if (!dStr) return 0;
+      const parts = dStr.substring(0, 10).split(/[-/]/);
+      if (parts.length < 3) return 0;
+      // If first part is year (YYYY-MM-DD)
+      if (parts[0].length === 4) return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+      // If last part is year (DD-MM-YYYY)
+      return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+    };
+
     // Filter lessons by student classId and sort chronologically
     const lessons = (schoolData.lessons || [])
       .filter(l => l.classId === student.classId)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => parseDateHelper(a.date) - parseDateHelper(b.date));
 
     res.json({ lessons });
   } catch (err) {

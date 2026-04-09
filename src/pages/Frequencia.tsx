@@ -147,11 +147,11 @@ export default function Frequencia() {
   // Merge lessons and attendance to show a complete history
   const mergedItems = lessons.map(lesson => {
     const lessonDate = (lesson.date || '').substring(0, 10);
-    const att = attendance.find(a => {
+    const atts = attendance.filter(a => {
       if (!a.date || typeof a.date !== 'string') return false;
       return a.date.substring(0, 10) === lessonDate;
     });
-    return { lesson, attendance: att };
+    return { lesson, attendances: atts };
   });
 
   const sortedItems = [...mergedItems].sort((a, b) => {
@@ -332,10 +332,16 @@ export default function Frequencia() {
               </thead>
               <tbody>
                 {sortedItems.map((item, idx) => {
-                  const { lesson, attendance: att } = item;
-                  const isPresent = att ? att.type === 'presence' : false;
-                  const justText = parseJustification(att?.justification);
-                  const isJustificationAccepted = att?.justificationAccepted === true;
+                  const { lesson, attendances: atts } = item;
+                  
+                  // Main attendance logic
+                  const mainAtt = atts.find(a => a.type === 'presence' || a.justification);
+                  const isPresent = atts.some(a => a.type === 'presence' && a.verified === true);
+                  
+                  const hasJustification = atts.some(a => !!a.justification);
+                  const activeJustification = atts.find(a => !!a.justification);
+                  const justText = parseJustification(activeJustification?.justification);
+                  const isJustificationAccepted = activeJustification?.justificationAccepted === true;
                   
                   const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
                   const isWithinWindow = isLessonWithinJustificationWindow(lesson, now);
@@ -345,7 +351,7 @@ export default function Frequencia() {
                     <tr key={lesson.id} style={{
                       animation: `fadeIn 0.3s ease-out ${idx * 0.03}s forwards`,
                       opacity: 0,
-                      backgroundColor: isJustificationAccepted ? 'rgba(251, 191, 36, 0.12)' : 'transparent',
+                      backgroundColor: isJustificationAccepted ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
                     }}>
                       <td>{formatDateFull(lesson.date)}</td>
                       <td>
@@ -403,8 +409,12 @@ export default function Frequencia() {
                             <CheckCircle2 size={16} /> Presente
                           </span>
                         ) : isJustificationAccepted ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-warning)' }}>
-                            <AlertTriangle size={16} /> Falta justificada
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f59e0b', fontWeight: 600 }}>
+                            <AlertTriangle size={16} /> Falta Justificada
+                          </span>
+                        ) : hasJustification ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-info)', fontWeight: 500 }}>
+                            <Clock size={16} /> Justificativa Pendente
                           </span>
                         ) : (isInProgress || isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime()) ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
@@ -417,29 +427,36 @@ export default function Frequencia() {
                         )}
                       </td>
                       <td>
-                        {att && isPresent ? (() => {
-                          try {
-                            if (!att.date || typeof att.date !== 'string') {
-                              return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
-                            }
-                            
-                            const d = new Date(att.date);
-                            
-                            if (!isNaN(d.getTime())) {
-                              return (
-                                <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                                  {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              );
-                            }
-                            
-                            return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
-                          } catch {
-                            return <span style={{ color: 'var(--color-text-secondary)' }}>—</span>;
-                          }
-                        })() : (
-                          <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
-                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {atts.length > 0 ? (
+                            atts
+                              .filter(a => a.type === 'presence' || a.verified)
+                              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                              .map((a, aIdx) => {
+                                const d = new Date(a.date);
+                                if (isNaN(d.getTime())) return null;
+                                return (
+                                  <span key={a.id} style={{ 
+                                    fontSize: '0.8125rem', 
+                                    color: 'var(--color-text-secondary)', 
+                                    fontWeight: 500,
+                                    display: 'block',
+                                    background: 'var(--bg-primary-alpha)',
+                                    padding: '2px 6px',
+                                    borderRadius: 4,
+                                    width: 'fit-content'
+                                  }}>
+                                    {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                );
+                              })
+                          ) : (
+                            <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
+                          )}
+                          {atts.length > 0 && atts.filter(a => a.type === 'presence' || a.verified).length === 0 && (
+                             <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         {justText ? (

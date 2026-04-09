@@ -79,8 +79,10 @@ export default function Dashboard() {
     val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const formatDate = (d: string) => {
-    const date = new Date(d + 'T00:00:00');
-    return date.toLocaleDateString('pt-BR');
+    if (!d) return '—';
+    const ms = parseLessonDateTime(d, '12:00', 12);
+    if (isNaN(ms)) return d;
+    return new Date(ms).toLocaleDateString('pt-BR');
   };
 
   const greeting = () => {
@@ -109,20 +111,43 @@ export default function Dashboard() {
   };
 
   const getNextOrCurrentClass = (): { lesson: Lesson; isInProgress: boolean } | null => {
-    if (!data?.lessons) return null;
+    if (!data?.lessons || data.lessons.length === 0) return null;
     
-    // First check if any lesson is currently in progress
     const activeLessons = data.lessons.filter(l => l.status !== 'cancelled' && l.status !== 'rescheduled');
     
-    // 1. First, look for anything strictly "In Progress"
-    const inProgress = activeLessons.find(l => {
+    // 1. First, priority: anything strictly "In Progress" RIGHT NOW
+    const currentlyPlaying = activeLessons.find(l => {
       const { isInProgress } = getLessonTimeStatus(l, now);
       return isInProgress;
     });
-    if (inProgress) return { lesson: inProgress, isInProgress: true };
+    if (currentlyPlaying) return { lesson: currentlyPlaying, isInProgress: true };
     
-    // 2. Next, look for the closest future lesson (or today's lesson that hasn't started)
-    const future = activeLessons
+    // 2. Secondary: If it's today and not completed yet
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    
+    const lessonsRemainingToday = activeLessons
+      .filter(l => {
+        const lessonMs = parseLessonDateTime(l.date, '12:00', 12);
+        const lessonDate = new Date(lessonMs);
+        lessonDate.setHours(0, 0, 0, 0);
+        
+        const { isCompleted } = getLessonTimeStatus(l, now);
+        return lessonDate.getTime() === today.getTime() && !isCompleted;
+      })
+      .sort((a, b) => {
+        const timeA = parseLessonDateTime(a.date, a.startTime || (a as any).start_time, 0);
+        const timeB = parseLessonDateTime(b.date, b.startTime || (b as any).start_time, 0);
+        return timeA - timeB;
+      });
+      
+    if (lessonsRemainingToday[0]) {
+      const { isInProgress } = getLessonTimeStatus(lessonsRemainingToday[0], now);
+      return { lesson: lessonsRemainingToday[0], isInProgress };
+    }
+    
+    // 3. Last resort: Next future lesson
+    const nextFuture = activeLessons
       .filter(l => {
         const { isCompleted } = getLessonTimeStatus(l, now);
         return !isCompleted;
@@ -130,14 +155,12 @@ export default function Dashboard() {
       .sort((a, b) => {
         const dateA = parseLessonDateTime(a.date, a.startTime || (a as any).start_time, 0);
         const dateB = parseLessonDateTime(b.date, b.startTime || (b as any).start_time, 0);
-        
-        // Chronological order (earliest future first)
-        return (dateA || 0) - (dateB || 0);
+        return dateA - dateB;
       });
-      
-    if (future[0]) {
-      const { isInProgress } = getLessonTimeStatus(future[0], now);
-      return { lesson: future[0], isInProgress };
+
+    if (nextFuture[0]) {
+      const { isInProgress } = getLessonTimeStatus(nextFuture[0], now);
+      return { lesson: nextFuture[0], isInProgress };
     }
     
     return null;
