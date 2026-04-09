@@ -9,6 +9,7 @@ export default function MinhasAulas() {
   const { token } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   // MUST be called logically at the top level
   const now = useRealTimeDate(30000);
@@ -57,18 +58,13 @@ export default function MinhasAulas() {
   const nowTime = now.getTime();
 
   const sortedLessons = [...lessons].sort((a, b) => {
-    const dA = a.date || '';
-    const dB = b.date || '';
-    if (!dA) return 1;
-    if (!dB) return -1;
-
-    const dateA = parseLessonDateTime(dA, a.startTime);
-    const dateB = parseLessonDateTime(dB, b.startTime);
+    const dateA = parseLessonDateTime(a.date, a.startTime);
+    const dateB = parseLessonDateTime(b.date, b.startTime);
     
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
     
-    return timeB - timeA; // Descending (Newest/closest to now at top)
+    return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
   });
 
   return (
@@ -79,9 +75,22 @@ export default function MinhasAulas() {
           50% { opacity: 0.6; }
         }
       `}</style>
-      <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
-        <h1 className="page-title">Cronograma de Aulas</h1>
-        <p className="page-subtitle">Acompanhe suas aulas e reposições agendadas</p>
+      <div className="animate-fade-in" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 className="page-title">Cronograma de Aulas</h1>
+          <p className="page-subtitle">Acompanhe suas aulas e reposições agendadas</p>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>ORDEM:</span>
+          <button
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            className="btn-secondary"
+            style={{ padding: '0.5rem 1rem', borderRadius: 12, height: 'auto', fontSize: '0.8125rem' }}
+          >
+            {sortOrder === 'asc' ? 'Crescente (Próximas)' : 'Decrescente (Antigas)'}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} className="animate-fade-in stagger-children">

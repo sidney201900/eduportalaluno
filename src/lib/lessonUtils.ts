@@ -13,25 +13,31 @@ function normalizeTime(time: string): string {
   return `${hours}:${minutes}:${seconds}`;
 }
 
-export function parseLessonDateTime(dateStr: string, timeStr?: string): number {
+export function parseLessonDateTime(dateStr: string, timeStr?: string, defaultHour = 12): number {
   if (!dateStr || typeof dateStr !== 'string') return NaN;
   
+  const cleanDateStr = dateStr.substring(0, 10);
   let y = 0, m = 0, d = 0;
   
-  if (dateStr.includes('/')) {
-    const parts = dateStr.substring(0, 10).split('/');
+  if (cleanDateStr.includes('/')) {
+    const parts = cleanDateStr.split('/');
     d = Number(parts[0]); m = Number(parts[1]) - 1; y = Number(parts[2]);
   } else {
-    const parts = dateStr.substring(0, 10).split('-');
+    const parts = cleanDateStr.split('-');
     y = Number(parts[0]); m = Number(parts[1]) - 1; d = Number(parts[2]);
   }
   
   if (isNaN(y) || isNaN(m) || isNaN(d)) return NaN;
   
-  let h = 12, min = 0, s = 0;
-  if (timeStr && typeof timeStr === 'string') {
+  let h = defaultHour, min = 0, s = 0;
+  if (timeStr && typeof timeStr === 'string' && timeStr.trim()) {
     const tParts = timeStr.trim().split(':');
-    h = Number(tParts[0] || 12); min = Number(tParts[1] || 0); s = Number(tParts[2] || 0);
+    h = Number(tParts[0] || defaultHour); min = Number(tParts[1] || 0); s = Number(tParts[2] || 0);
+    if (tParts.length === 1) h = Number(tParts[0]); // Handle case "14"
+  } else {
+    // If timeStr is missing, used defaultHour: 00 for start, 23 for end
+    if (defaultHour === 23) { h = 23; min = 59; s = 59; }
+    else { h = defaultHour; min = 0; s = 0; }
   }
   
   return new Date(y, m, d, h, min, s).getTime();
@@ -48,8 +54,11 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
   const lessonDateStr = typeof lesson.date === 'string' ? lesson.date.substring(0, 10) : '';
   if (!lessonDateStr) return { isInProgress, isCompleted };
 
-  let startMs = parseLessonDateTime(lessonDateStr, lesson.startTime);
-  let endMs = parseLessonDateTime(lessonDateStr, lesson.endTime || '23:59:59');
+  const startTime = lesson.startTime || (lesson as any).start_time;
+  const endTime = lesson.endTime || (lesson as any).end_time;
+  
+  let startMs = parseLessonDateTime(lessonDateStr, startTime, 0);
+  let endMs = parseLessonDateTime(lessonDateStr, endTime, 23);
   const nowMs = now.getTime();
 
   if (!isNaN(startMs) && !isNaN(endMs) && startMs > endMs) {

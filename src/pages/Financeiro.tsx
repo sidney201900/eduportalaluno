@@ -12,6 +12,7 @@ export default function Financeiro() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [loading, setLoading] = useState(true);
   const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,21 +53,15 @@ export default function Financeiro() {
   const isPaid = (status: string) => normalizeStatus(status) === 'paid';
   const isPending = (status: string) => ['pending', 'overdue'].includes(normalizeStatus(status));
 
-
   const filtered = payments.filter(p => {
     if (filter === 'all') return true;
     return normalizeStatus(p.status) === filter;
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    // 1. Pendentes/Atrasados primeiro
-    const aPending = isPending(a.status);
-    const bPending = isPending(b.status);
-    if (aPending && !bPending) return -1;
-    if (!aPending && bPending) return 1;
-
-    // 2. Data da primeira para a ultima (Ascendente)
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    const dateA = new Date(a.dueDate).getTime();
+    const dateB = new Date(b.dueDate).getTime();
+    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
   const formatCurrency = (val: number) =>
@@ -76,8 +71,6 @@ export default function Financeiro() {
     const date = new Date(d + 'T00:00:00');
     return date.toLocaleDateString('pt-BR');
   };
-
-
 
   const getStatusBadge = (status: string) => {
     const norm = normalizeStatus(status);
@@ -99,19 +92,18 @@ export default function Financeiro() {
     
     let boleto = null;
     if (asaasId) {
-      boleto = boletos.find(b => b.asaas_payment_id === asaasId);
+      boleto = boletos.find(b => (b as any).asaas_payment_id === asaasId);
     }
     
-    // Fallback: match by date and amount if no ID matched
     if (!boleto) {
        boleto = boletos.find(b => 
-         b.vencimento === payment.dueDate && 
-         Math.abs(Number(b.valor) - (payment.amount - (payment.discount || 0))) < 1
+         (b as any).vencimento === payment.dueDate && 
+         Math.abs(Number((b as any).valor) - (payment.amount - (payment.discount || 0))) < 1
        );
     }
     
     if (!boleto) return null;
-    return boleto.link_recibo || boleto.transaction_receipt_url || null;
+    return (boleto as any).link_recibo || (boleto as any).transaction_receipt_url || null;
   };
 
   const handleOpenReceipt = (payment: Payment) => {
@@ -119,7 +111,6 @@ export default function Financeiro() {
     if (receiptUrl) {
       window.open(receiptUrl, '_blank', 'noopener,noreferrer');
     } else {
-      // No receipt URL available — show local modal fallback
       setReceiptPayment(payment);
     }
   };
@@ -132,17 +123,17 @@ export default function Financeiro() {
     
     let boleto = null;
     if (asaasId) {
-      boleto = boletos.find(b => b.asaas_payment_id === asaasId);
+      boleto = boletos.find(b => (b as any).asaas_payment_id === asaasId);
     }
     
     if (!boleto) {
        boleto = boletos.find(b => 
-         b.vencimento === payment.dueDate && 
-         Math.abs(Number(b.valor) - (payment.amount - (payment.discount || 0))) < 1
+         (b as any).vencimento === payment.dueDate && 
+         Math.abs(Number((b as any).valor) - (payment.amount - (payment.discount || 0))) < 1
        );
     }
     
-    return boleto?.link_boleto || null;
+    return (boleto as any)?.link_boleto || null;
   };
 
   const totalPending = payments
@@ -230,6 +221,17 @@ export default function Financeiro() {
             {f.label}
           </button>
         ))}
+        
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>ORDEM:</span>
+          <button
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            className="btn-secondary"
+            style={{ padding: '4px 12px', borderRadius: 8, fontSize: '0.75rem' }}
+          >
+            {sortOrder === 'asc' ? 'Crescente (Antigos)' : 'Decrescente (Novos)'}
+          </button>
+        </div>
       </div>
 
       {/* Table */}

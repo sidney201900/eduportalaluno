@@ -11,6 +11,7 @@ export default function Frequencia() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Modal State
   const [showJustifyModal, setShowJustifyModal] = useState(false);
@@ -145,24 +146,22 @@ export default function Frequencia() {
 
   // Merge lessons and attendance to show a complete history
   const mergedItems = lessons.map(lesson => {
-    const att = attendance.find(a => a.date && typeof a.date === 'string' && a.date.substring(0, 10) === lesson.date);
+    const lessonDate = (lesson.date || '').substring(0, 10);
+    const att = attendance.find(a => {
+      if (!a.date || typeof a.date !== 'string') return false;
+      return a.date.substring(0, 10) === lessonDate;
+    });
     return { lesson, attendance: att };
   });
 
   const sortedItems = [...mergedItems].sort((a, b) => {
-    const dA = a.lesson.date || '';
-    const dB = b.lesson.date || '';
-    if (!dA) return 1;
-    if (!dB) return -1;
-
-    // Ordered chronologically (closest/oldest first -> newest last)
-    const dateA = parseLessonDateTime(dA, a.lesson.startTime);
-    const dateB = parseLessonDateTime(dB, b.lesson.startTime);
+    const dateA = parseLessonDateTime(a.lesson.date, a.lesson.startTime);
+    const dateB = parseLessonDateTime(b.lesson.date, b.lesson.startTime);
     
-    // Recent first (Today/Future at top of history)
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
-    return timeB - timeA; // Descending (Most recent at top)
+    
+    return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
   });
 
   // Collect lessons available for justification modal dropdown
@@ -218,23 +217,27 @@ export default function Frequencia() {
           50% { opacity: 0.6; }
         }
       `}</style>
-      <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <h1 className="page-title">Frequência</h1>
-            <p className="page-subtitle">Acompanhe sua presença nas aulas</p>
-          </div>
-
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <div className="animate-fade-in">
+          <h1 className="page-title">Frequência</h1>
+          <p className="page-subtitle">Seu histórico de presença e justificativas</p>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>ORDEM:</span>
           <button
-            className="btn-primary"
-            onClick={() => openJustifyModal()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.75rem 1.25rem', fontSize: '0.875rem',
-            }}
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            className="btn-secondary"
+            style={{ padding: '0.5rem 1rem', borderRadius: 12, height: 'auto', fontSize: '0.8125rem' }}
           >
-            <AlertTriangle size={18} />
-            Justificar Falta
+            {sortOrder === 'asc' ? 'Crescente (Antigos)' : 'Decrescente (Novos)'}
+          </button>
+          <button
+            onClick={() => openJustifyModal()}
+            className="btn-primary"
+            style={{ padding: '0.5rem 1.25rem', borderRadius: 12, height: 'auto' }}
+          >
+            <Send size={18} /> Justificar Falta
           </button>
         </div>
       </div>
@@ -372,7 +375,7 @@ export default function Frequencia() {
                            }}>
                              <Clock size={12} /> EM ANDAMENTO
                            </span>
-                        ) : isCompleted || new Date(lesson.date + 'T23:59:59') < now ? (
+                        ) : isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime() ? (
                            <span style={{
                              background: 'var(--color-success)', color: 'white',
                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
