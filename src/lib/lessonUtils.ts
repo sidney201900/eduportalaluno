@@ -13,6 +13,20 @@ function normalizeTime(time: string): string {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+/**
+ * Retorna uma string YYYY-MM-DD de qualquer formato suportado
+ */
+export function getNormalizedDate(dateStr: string): string {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const ms = parseLessonDateTime(dateStr, '12:00', 12);
+  if (isNaN(ms)) return '';
+  const d = new Date(ms);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function parseLessonDateTime(dateStr: string, timeStr?: string, defaultHour = 12): number {
   if (!dateStr || typeof dateStr !== 'string') return NaN;
   

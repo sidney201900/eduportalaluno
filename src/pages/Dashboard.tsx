@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CreditCard, CalendarCheck, BookOpen, Clock, TrendingUp, AlertTriangle, CalendarClock } from 'lucide-react';
 import type { Payment, Attendance, Class, Course, Lesson } from '../types';
-import { getLessonTimeStatus, parseLessonDateTime } from '../lib/lessonUtils';
+import { getLessonTimeStatus, getNormalizedDate, parseLessonDateTime } from '../lib/lessonUtils';
 import { useRealTimeDate } from '../hooks/useRealTimeDate';
 
 interface DashboardData {
@@ -114,6 +114,9 @@ export default function Dashboard() {
     if (!data?.lessons || data.lessons.length === 0) return null;
     
     const activeLessons = data.lessons.filter(l => l.status !== 'cancelled' && l.status !== 'rescheduled');
+    
+    // Normalize "now" date
+    const nowNorm = getNormalizedDate(now.toISOString());
     
     // 1. First, priority: anything strictly "In Progress" RIGHT NOW
     const currentlyPlaying = activeLessons.find(l => {

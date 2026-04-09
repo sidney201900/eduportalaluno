@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CalendarCheck, CheckCircle2, XCircle, FileText, Send, X, Loader2, AlertTriangle, ChevronDown, Clock } from 'lucide-react';
 import type { Attendance, Lesson } from '../types';
-import { getLessonTimeStatus, isLessonWithinJustificationWindow, parseLessonDateTime } from '../lib/lessonUtils';
+import { getLessonTimeStatus, getNormalizedDate, isLessonWithinJustificationWindow, parseLessonDateTime } from '../lib/lessonUtils';
 import { useRealTimeDate } from '../hooks/useRealTimeDate';
 
 export default function Frequencia() {
@@ -146,10 +146,10 @@ export default function Frequencia() {
 
   // Merge lessons and attendance to show a complete history
   const mergedItems = lessons.map(lesson => {
-    const lessonDate = (lesson.date || '').substring(0, 10);
+    const lessonDate = getNormalizedDate(lesson.date || '');
     const atts = attendance.filter(a => {
       if (!a.date || typeof a.date !== 'string') return false;
-      return a.date.substring(0, 10) === lessonDate;
+      return getNormalizedDate(a.date) === lessonDate;
     });
     return { lesson, attendances: atts };
   });
@@ -172,7 +172,7 @@ export default function Frequencia() {
     if (!isLessonWithinJustificationWindow(l, now)) return false;
     
     // Normalize lesson date for comparison
-    const lessonDate = (l.date || '').substring(0, 10);
+    const lessonDate = getNormalizedDate(l.date || '');
     const att = attendance.find(a => {
       if (!a.date || typeof a.date !== 'string') return false;
       return a.date.substring(0, 10) === lessonDate;
@@ -334,10 +334,8 @@ export default function Frequencia() {
                 {sortedItems.map((item, idx) => {
                   const { lesson, attendances: atts } = item;
                   
-                  // Main attendance logic
-                  const mainAtt = atts.find(a => a.type === 'presence' || a.justification);
-                  const isPresent = atts.some(a => a.type === 'presence' && a.verified === true);
-                  
+                  // PREREQUISITE: Only 'presence' type counts as real presence
+                  const isPresent = atts.some(a => a.type === 'presence');
                   const hasJustification = atts.some(a => !!a.justification);
                   const activeJustification = atts.find(a => !!a.justification);
                   const justText = parseJustification(activeJustification?.justification);

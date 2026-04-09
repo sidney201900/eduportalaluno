@@ -292,10 +292,10 @@ app.post('/api/portal/frequencia/justificar', authMiddleware, async (req, res) =
       recordIndex = attendance.length - 1;
     }
     
-    // Create notification for the admin (visible in EduManager)
+    // Create notification for the admin (visible in EduManager Admin Panel)
     notifications.push({
       id: `notif-${Date.now()}`,
-      studentId: req.user.studentId,
+      studentId: 'admin', // EduManager expects 'admin' for school-wide admin notifications
       title: 'Nova Justificativa de Falta',
       message: `O aluno ${student?.name || req.user.name} enviou uma justificativa para a aula de ${new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')}.`,
       read: false,
