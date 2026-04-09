@@ -393,23 +393,21 @@ export default function Frequencia() {
                         )}
                       </td>
                       <td>
-                        {att ? (
-                          isPresent ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
-                              <CheckCircle2 size={16} /> Presente
-                            </span>
-                          ) : isJustificationAccepted ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-warning)' }}>
-                              <AlertTriangle size={16} /> Falta justificada
-                            </span>
-                          ) : (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
-                              <XCircle size={16} /> Falta
-                            </span>
-                          )
+                        {isPresent ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                            <CheckCircle2 size={16} /> Presente
+                          </span>
+                        ) : isJustificationAccepted ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-warning)' }}>
+                            <AlertTriangle size={16} /> Falta justificada
+                          </span>
+                        ) : (isInProgress || isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime()) ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
+                            <XCircle size={16} /> Falta
+                          </span>
                         ) : (
                           <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                            {isCompleted ? 'Não registrado' : 'Aguardando'}
+                            Aguardando
                           </span>
                         )}
                       </td>

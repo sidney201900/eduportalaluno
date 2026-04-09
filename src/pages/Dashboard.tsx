@@ -107,28 +107,35 @@ export default function Dashboard() {
     if (!data?.lessons) return null;
     
     // First check if any lesson is currently in progress
-    const inProgress = data.lessons.find(l => {
-      if (l.status === 'cancelled') return false;
+    const activeLessons = data.lessons.filter(l => l.status !== 'cancelled' && l.status !== 'rescheduled');
+    
+    // 1. First, look for anything strictly "In Progress"
+    const inProgress = activeLessons.find(l => {
       const { isInProgress } = getLessonTimeStatus(l, now);
       return isInProgress;
     });
     if (inProgress) return { lesson: inProgress, isInProgress: true };
     
-    const future = data.lessons
+    // 2. Next, look for the closest future lesson (or today's lesson that hasn't started)
+    const future = activeLessons
       .filter(l => {
-        if (l.status === 'cancelled') return false;
         const { isCompleted } = getLessonTimeStatus(l, now);
         return !isCompleted;
       })
       .sort((a, b) => {
-        const dateA = parseLessonDateTime(a.date, a.startTime);
-        const dateB = parseLessonDateTime(b.date, b.startTime);
+        const dateA = parseLessonDateTime(a.date, a.startTime || (a as any).start_time, 0);
+        const dateB = parseLessonDateTime(b.date, b.startTime || (b as any).start_time, 0);
         
-        const diffA = Math.abs((dateA || 0) - now.getTime());
-        const diffB = Math.abs((dateB || 0) - now.getTime());
-        return diffA - diffB; // Closest to now first
+        // Chronological order (earliest future first)
+        return (dateA || 0) - (dateB || 0);
       });
-    return future[0] ? { lesson: future[0], isInProgress: getLessonTimeStatus(future[0], now).isInProgress } : null;
+      
+    if (future[0]) {
+      const { isInProgress } = getLessonTimeStatus(future[0], now);
+      return { lesson: future[0], isInProgress };
+    }
+    
+    return null;
   };
 
   const formatTime = (t?: string) => (t && typeof t === 'string') ? t.substring(0, 5) : '';

@@ -136,13 +136,35 @@ export default function Financeiro() {
     return (boleto as any)?.link_boleto || null;
   };
 
+  const getEffectiveValue = (payment: Payment) => {
+    // Try to find matching boleto from Supabase sync to get updated value (interest/fines)
+    const asaasId = payment.asaasPaymentId || (payment as any).asaas_payment_id;
+    let boleto = null;
+    if (asaasId) {
+      boleto = boletos.find(b => (b as any).asaas_payment_id === asaasId);
+    }
+    
+    if (!boleto) {
+       boleto = boletos.find(b => 
+         (b as any).vencimento === payment.dueDate && 
+         Math.abs(Number((b as any).valor) - (payment.amount - (payment.discount || 0))) < 10
+       );
+    }
+    
+    if (boleto && (boleto as any).valor) {
+      return Number((boleto as any).valor);
+    }
+    
+    return payment.amount - (payment.discount || 0);
+  };
+
   const totalPending = payments
     .filter(p => isPending(p.status))
-    .reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
+    .reduce((s, p) => s + getEffectiveValue(p), 0);
 
   const totalPaid = payments
     .filter(p => isPaid(p.status))
-    .reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
+    .reduce((s, p) => s + getEffectiveValue(p), 0);
 
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: 'Todos' },
@@ -251,6 +273,8 @@ export default function Financeiro() {
                   <th>Descrição</th>
                   <th>Vencimento</th>
                   <th>Valor</th>
+                  <th>Desconto</th>
+                  <th>A Pagar</th>
                   <th>Status</th>
                   <th>Ação</th>
                 </tr>
@@ -276,8 +300,17 @@ export default function Financeiro() {
                         </div>
                       </td>
                       <td>{formatDate(payment.dueDate)}</td>
-                      <td style={{ fontWeight: 600 }}>
-                        {formatCurrency(payment.amount - (payment.discount || 0))}
+                      <td style={{ fontWeight: 500 }}>
+                        {formatCurrency(payment.amount)}
+                      </td>
+                      <td style={{ color: payment.discount ? 'var(--color-success)' : 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
+                        {payment.discount ? `- ${formatCurrency(payment.discount)}` : '—'}
+                      </td>
+                      <td style={{ 
+                        fontWeight: 600, 
+                        color: normalizeStatus(payment.status) === 'overdue' ? 'var(--color-danger)' : 'var(--color-primary-light)' 
+                      }}>
+                        {formatCurrency(getEffectiveValue(payment))}
                       </td>
                       <td>{getStatusBadge(payment.status)}</td>
                       <td>
