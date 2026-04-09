@@ -137,25 +137,37 @@ export default function Financeiro() {
   };
 
   const getEffectiveValue = (payment: Payment) => {
-    const basePagar = (payment.amount || 0) - (payment.discount || 0);
+    const baseAmount = payment.amount || 0;
+    const discount = payment.discount || 0;
+    const netAmount = baseAmount - discount;
     const status = normalizeStatus(payment.status);
 
     // Try to find matching boleto from Supabase sync 
     const asaasId = payment.asaasPaymentId || (payment as any).asaas_payment_id;
     let boleto = null;
+    
     if (asaasId) {
       boleto = boletos.find(b => (b as any).asaas_payment_id === asaasId);
     }
     
     if (!boleto) {
-       boleto = boletos.find(b => 
-         (b as any).vencimento === payment.dueDate && 
-         Math.abs(Number((b as any).valor) - payment.amount) < 5
-       );
+      // Fallback: Match by due date and base amount (allowing for interest/fines)
+      boleto = boletos.find(b => {
+        const bVenc = (b as any).vencimento;
+        const bVal = Number((b as any).valor);
+        
+        // Exact date match
+        if (bVenc === payment.dueDate) {
+          // If value is exactly base or exactly net
+          if (Math.abs(bVal - baseAmount) < 1 || Math.abs(bVal - netAmount) < 1) return true;
+          // If it's overdue, the boleto value will be HIGHER than baseAmount
+          if (status === 'overdue' && bVal > netAmount) return true;
+        }
+        return false;
+      });
     }
     
-    // If we have a boleto and it is overdue, use its valor (contains interest/fines)
-    // Otherwise, if it's paid, use the value actually paid.
+    // If we have a boleto and it is overdue or paid, use current Asaas value
     if (boleto && (boleto as any).valor) {
       const bValue = Number((boleto as any).valor);
       if (status === 'overdue' || status === 'paid') {
@@ -163,8 +175,8 @@ export default function Financeiro() {
       }
     }
     
-    // Default: use the discounted base value
-    return basePagar;
+    // Default: use the discounted base value (net amount)
+    return netAmount;
   };
 
   const totalPending = payments

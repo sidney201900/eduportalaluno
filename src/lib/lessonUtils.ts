@@ -91,24 +91,22 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
   return { isInProgress, isCompleted };
 }
 
-export function isLessonWithinJustificationWindow(lessonDate: string, now = new Date()) {
-  if (!lessonDate || typeof lessonDate !== 'string') return false;
+export function isLessonWithinJustificationWindow(lesson: Lesson, now = new Date()) {
+  if (!lesson || !lesson.date) return false;
   
-  // Use robust parser instead of new Date() to handle DD-MM-YYYY
-  const lessonMs = parseLessonDateTime(lessonDate, '12:00', 12);
-  if (isNaN(lessonMs)) return false;
+  const startTime = lesson.startTime || (lesson as any).start_time;
+  const endTime = lesson.endTime || (lesson as any).end_time;
   
-  const d = new Date(lessonMs);
+  const lessonStartMs = parseLessonDateTime(lesson.date, startTime, 0);
+  const lessonEndMs = parseLessonDateTime(lesson.date, endTime, 23);
+  
+  if (isNaN(lessonStartMs) || isNaN(lessonEndMs)) return false;
 
-  // 1 day before
-  const minDate = new Date(now);
-  minDate.setDate(now.getDate() - 1);
-  minDate.setHours(0, 0, 0, 0);
+  const nowMs = now.getTime();
+  const dayInMs = 24 * 60 * 60 * 1000;
 
-  // 1 day after
-  const maxDate = new Date(now);
-  maxDate.setDate(now.getDate() + 1);
-  maxDate.setHours(23, 59, 59, 999);
-
-  return d >= minDate && d <= maxDate;
+  // Window: 24h before start until 24h after end
+  const canJustify = nowMs >= (lessonStartMs - dayInMs) && nowMs <= (lessonEndMs + dayInMs);
+  
+  return canJustify;
 }

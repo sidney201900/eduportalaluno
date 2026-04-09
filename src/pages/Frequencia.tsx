@@ -21,9 +21,9 @@ export default function Frequencia() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Update time every 30s to keep timeline ticking forward live
+  // Update time every 10s to keep timeline ticking forward live
   // This hook MUST be unconditionally called at the top level
-  const now = useRealTimeDate(30000);
+  const now = useRealTimeDate(10000);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -168,8 +168,8 @@ export default function Frequencia() {
   const justifiableLessons = lessons.filter(l => {
     if (l.status === 'cancelled') return false;
     
-    // Check window (uses parseLessonDateTime internally now)
-    if (!isLessonWithinJustificationWindow(l.date, now)) return false;
+    // Check window (uses new 24h before/after logic)
+    if (!isLessonWithinJustificationWindow(l, now)) return false;
     
     // Normalize lesson date for comparison
     const lessonDate = (l.date || '').substring(0, 10);
@@ -336,11 +336,9 @@ export default function Frequencia() {
                   const isPresent = att ? att.type === 'presence' : false;
                   const justText = parseJustification(att?.justification);
                   const isJustificationAccepted = att?.justificationAccepted === true;
-                  const dateStr = lesson.date;
                   
                   const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
-
-                  const isWithinWindow = isLessonWithinJustificationWindow(dateStr, now);
+                  const isWithinWindow = isLessonWithinJustificationWindow(lesson, now);
                   const canJustify = !isPresent && isWithinWindow && !justText && lesson.status !== 'cancelled';
 
                   return (
@@ -380,7 +378,7 @@ export default function Frequencia() {
                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
                              display: 'inline-flex', alignItems: 'center', gap: 4,
                            }}>
-                             <Clock size={12} /> EM ANDAMENTO
+                             <Clock size={12} /> • AULA EM ANDAMENTO
                            </span>
                         ) : isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime() ? (
                            <span style={{
@@ -451,7 +449,7 @@ export default function Frequencia() {
                           </span>
                         ) : canJustify ? (
                           <button
-                            onClick={() => openJustifyModal(dateStr)}
+                            onClick={() => openJustifyModal(lesson.date)}
                             style={{
                               fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: 8,
                               background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)',

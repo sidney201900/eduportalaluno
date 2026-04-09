@@ -18,8 +18,8 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Real-time update every 30s
-  const now = useRealTimeDate(30000);
+  // Real-time update every 10s
+  const now = useRealTimeDate(10000);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -240,7 +240,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                {isCurrentlyInProgress ? '🔴 AULA EM ANDAMENTO' : 'PRÓXIMA AULA'}
+                {isCurrentlyInProgress ? '🔴 • AULA EM ANDAMENTO' : 'PRÓXIMA AULA'}
               </p>
             </div>
           </div>
@@ -264,7 +264,7 @@ export default function Dashboard() {
                   background: 'var(--color-info)', color: 'white',
                   fontSize: '0.7rem', fontWeight: 600,
                 }}>
-                  <Clock size={12} /> EM ANDAMENTO
+                  <Clock size={12} /> • AULA EM ANDAMENTO
                 </span>
               )}
             </>
