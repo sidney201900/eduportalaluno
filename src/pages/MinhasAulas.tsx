@@ -122,13 +122,13 @@ export default function MinhasAulas() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} className="animate-fade-in stagger-children">
-        {sortedLessons.length === 0 ? (
+        {displayLessons.length === 0 ? (
           <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
             <CalendarIcon size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
             <p>Nenhuma aula encontrada no cronograma.</p>
           </div>
         ) : (
-          sortedLessons.map(lesson => {
+          displayLessons.map(lesson => {
             const isCancelled = lesson.status === 'cancelled';
             const isRescheduled = lesson.status === 'rescheduled';
             const isReposicao = lesson.type === 'reposicao';

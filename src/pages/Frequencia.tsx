@@ -340,7 +340,7 @@ export default function Frequencia() {
       </div>
 
       {/* List */}
-      {sortedItems.length === 0 ? (
+      {displayItems.length === 0 ? (
         <div className="glass-card animate-fade-in" style={{
           padding: '3rem', textAlign: 'center', color: 'var(--color-text-secondary)',
         }}>
@@ -373,7 +373,6 @@ export default function Frequencia() {
                   const justText = parseJustification(activeJustification?.justification);
                   const isJustificationAccepted = activeJustification?.justificationAccepted === true;
                   
-                  const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
                   const isWithinWindow = isLessonWithinJustificationWindow(lesson, now);
                   const canJustify = !isPresent && isWithinWindow && !justText && lesson.status !== 'cancelled';
 
