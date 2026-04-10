@@ -425,8 +425,8 @@ export default function Frequencia() {
                   const isCancelled = lesson.status === 'cancelled';
                   const isRescheduled = lesson.status === 'rescheduled';
                   
-                  // PREREQUISITE: Only 'presence' type counts as real presence
-                  const isPresent = atts.some(a => a.type === 'presence');
+                  // PREREQUISITE: 'presence' type OR verified status counts as real presence
+                  const isPresent = atts.some(a => a.type === 'presence' || a.verified === true);
                   const hasJustification = atts.some(a => !!a.justification);
                   const activeJustification = atts.find(a => !!a.justification);
                   const justText = parseJustification(activeJustification?.justification);
