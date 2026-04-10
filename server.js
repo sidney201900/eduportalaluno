@@ -211,8 +211,10 @@ app.get('/api/portal/notas', authMiddleware, async (req, res) => {
     );
     const subjects = schoolData.subjects || [];
 
-    // Filter subjects that belong to the student's course
-    const courseSubjects = subjects.filter(s => s.courseId === studentClass?.courseId);
+    // Filter subjects that belong to the student's class (match the schema in types.ts)
+    const courseSubjects = subjects.filter(s => 
+      !s.classId || s.classId === student?.classId
+    );
 
     // Enrich grades with subject name
     const enrichedGrades = grades.map((g) => {

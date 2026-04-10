@@ -188,9 +188,13 @@ export default function Frequencia() {
   // Merge and Categorize
   const processedItems = lessons.map(lesson => {
     const lessonDate = getNormalizedDate(lesson.date || '');
+    const lessonFullISO = new Date(parseLessonDateTime(lesson.date, lesson.startTime || '00:00:00')).toISOString();
+
     const atts = attendance.filter(a => {
       if (!a.date || typeof a.date !== 'string') return false;
-      return getNormalizedDate(a.date) === lessonDate;
+      // Precision match: if the record has a full timestamp, compare exactly. 
+      // Fallback to day match for legacyEduManager records.
+      return a.date === lessonFullISO || getNormalizedDate(a.date) === lessonDate;
     });
     
     const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
@@ -405,6 +409,8 @@ export default function Frequencia() {
               <tbody>
                 {displayItems.map((item, idx) => {
                   const { lesson, attendances: atts, isInProgress, isCompleted } = item;
+                  const isCancelled = lesson.status === 'cancelled';
+                  const isRescheduled = lesson.status === 'rescheduled';
                   
                   // PREREQUISITE: Only 'presence' type counts as real presence
                   const isPresent = atts.some(a => a.type === 'presence');
