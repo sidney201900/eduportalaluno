@@ -144,8 +144,8 @@ export default function MinhasAulas() {
                   padding: '1.5rem',
                   opacity: isCancelled ? 0.55 : 1,
                   borderLeft: isCancelled ? '4px solid var(--color-danger)'
-                    : isRescheduled ? '4px solid var(--color-warning)'
-                    : isInProgress ? '4px solid var(--color-info)'
+                    : isInProgress && !isCancelled ? '4px solid var(--color-info)'
+                    : isRescheduled ? '4px solid #8b5cf6'
                     : isCompleted ? '4px solid var(--color-success)'
                     : '4px solid var(--color-primary)',
                 }}
@@ -196,20 +196,22 @@ export default function MinhasAulas() {
                       </span>
                     )}
 
-                    {isRescheduled && (
+                    {isRescheduled && !isInProgress && (
                       <span style={{
-                        background: 'var(--color-warning)', color: 'white',
+                        background: '#8b5cf6', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
+                        boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)'
                       }}>
                         REAGENDADA
                       </span>
                     )}
 
-                    {isInProgress && !isCancelled && !isRescheduled && (
+                    {isInProgress && !isCancelled && (
                       <span className="animate-pulse" style={{
                         background: 'var(--color-info)', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
                         display: 'flex', alignItems: 'center', gap: 4,
+                        boxShadow: '0 0 15px var(--color-info-alpha)'
                       }}>
                         <Clock size={12} /> EM ANDAMENTO
                       </span>

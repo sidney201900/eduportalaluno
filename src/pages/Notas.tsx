@@ -10,6 +10,7 @@ interface GradeWithSubject extends Grade {
 export default function Notas() {
   const { token } = useAuth();
   const [grades, setGrades] = useState<GradeWithSubject[]>([]);
+  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [periods, setPeriods] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,6 +23,7 @@ export default function Notas() {
         const data = await res.json();
         setGrades(data.grades || []);
         setPeriods(data.periods || []);
+        setAllSubjects(data.allSubjects || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -40,10 +42,13 @@ export default function Notas() {
     );
   }
 
-  // Group grades by subject
-  const subjects = [...new Set(grades.map(g => g.subjectId))];
-  const subjectNames: Record<string, string> = {};
-  grades.forEach(g => { subjectNames[g.subjectId] = g.subjectName; });
+  // Use subjects from course instead of deriving from grades
+  const displaySubjects = allSubjects.length > 0 
+    ? allSubjects 
+    : [...new Set(grades.map(g => g.subjectId))].map(id => ({ 
+        id, 
+        name: grades.find(g => g.subjectId === id)?.subjectName || id 
+      }));
 
   const getGradeColor = (value: number) => {
     if (value >= 7) return 'var(--color-success)';
@@ -72,17 +77,17 @@ export default function Notas() {
               <thead>
                 <tr>
                   <th>Disciplina</th>
-                  {periods.map(p => (
-                    <th key={p} style={{ textAlign: 'center' }}>{p}</th>
-                  ))}
-                  <th style={{ textAlign: 'center' }}>Média</th>
+                  <th style={{ textAlign: 'center' }}>Nota / Média</th>
                 </tr>
               </thead>
               <tbody>
-                {subjects.map((subjectId, idx) => {
+                {displaySubjects.map((s, idx) => {
+                  const subjectId = typeof s === 'string' ? s : s.id;
+                  const subjectName = typeof s === 'string' ? s : s.name;
+
                   const subjectGrades = grades.filter(g => g.subjectId === subjectId);
                   const avg = subjectGrades.length > 0
-                    ? subjectGrades.reduce((s, g) => s + g.value, 0) / subjectGrades.length
+                    ? subjectGrades.reduce((sum, g) => sum + g.value, 0) / subjectGrades.length
                     : 0;
                   return (
                     <tr key={subjectId} style={{
@@ -90,35 +95,29 @@ export default function Notas() {
                       opacity: 0,
                     }}>
                       <td style={{ fontWeight: 500 }}>
-                        {subjectNames[subjectId] || subjectId}
+                        {subjectName}
                       </td>
-                      {periods.map(period => {
-                        const grade = subjectGrades.find(g => g.period === period);
-                        return (
-                          <td key={period} style={{ textAlign: 'center' }}>
-                            {grade ? (
-                              <span style={{
-                                fontWeight: 700, fontSize: '0.9375rem',
-                                color: getGradeColor(grade.value),
-                              }}>
-                                {grade.value.toFixed(1)}
-                              </span>
-                            ) : (
-                              <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
-                            )}
-                          </td>
-                        );
-                      })}
                       <td style={{ textAlign: 'center' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          width: 48, height: 32, borderRadius: 8,
-                          background: avg >= 7 ? 'var(--bg-success-alpha)' : avg >= 5 ? 'var(--bg-warning-alpha)' : 'var(--bg-danger-alpha)',
-                          fontWeight: 700, fontSize: '0.9375rem',
-                          color: getGradeColor(avg),
-                        }}>
-                          {avg.toFixed(1)}
-                        </span>
+                        {subjectGrades.length > 0 ? (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            minWidth: 48, height: 32, borderRadius: 8, padding: '0 8px',
+                            background: avg >= 7 ? 'var(--bg-success-alpha)' : avg >= 5 ? 'var(--bg-warning-alpha)' : 'var(--bg-danger-alpha)',
+                            fontWeight: 700, fontSize: '0.9375rem',
+                            color: getGradeColor(avg),
+                          }}>
+                            {avg.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            color: 'var(--color-text-secondary)', 
+                            fontSize: '0.75rem', 
+                            fontStyle: 'italic',
+                            opacity: 0.7 
+                          }}>
+                            Aguardando Nota
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

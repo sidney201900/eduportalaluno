@@ -203,10 +203,16 @@ app.get('/api/portal/boletos', authMiddleware, async (req, res) => {
 app.get('/api/portal/notas', authMiddleware, async (req, res) => {
   try {
     const schoolData = await getSchoolData();
+    const student = (schoolData.students || []).find(s => s.id === req.user.studentId);
+    const studentClass = (schoolData.classes || []).find(c => c.id === student?.classId);
+    
     const grades = (schoolData.grades || []).filter(
       (g) => g.studentId === req.user.studentId
     );
     const subjects = schoolData.subjects || [];
+
+    // Filter subjects that belong to the student's course
+    const courseSubjects = subjects.filter(s => s.courseId === studentClass?.courseId);
 
     // Enrich grades with subject name
     const enrichedGrades = grades.map((g) => {
@@ -215,9 +221,15 @@ app.get('/api/portal/notas', authMiddleware, async (req, res) => {
     });
 
     // Collect unique periods
-    const periods = [...new Set(grades.map((g) => g.period))].sort();
+    const periods = [...new Set(grades.map((g) => g.period))];
+    if (periods.length === 0) periods.push('1º Bimestre', '2º Bimestre', '3º Bimestre', '4º Bimestre');
+    periods.sort();
 
-    res.json({ grades: enrichedGrades, periods });
+    res.json({ 
+      grades: enrichedGrades, 
+      periods,
+      allSubjects: courseSubjects // Send the complete list of subjects for this course
+    });
   } catch (err) {
     console.error('Notas error:', err);
     res.status(500).json({ error: 'Erro interno' });
@@ -263,11 +275,11 @@ app.post('/api/portal/frequencia/justificar', authMiddleware, async (req, res) =
     const notifications = schoolData.notifications || [];
     const student = (schoolData.students || []).find(s => s.id === req.user.studentId);
     
-    // Try to find existing absence record for this date
-    const dateStr = date.substring(0, 10);
+    // Use the full ISO string (including time) to distinguish between multiple lessons on same day
+    const fullDateStr = date; 
     let recordIndex = attendance.findIndex(a => 
       a.studentId === req.user.studentId && 
-      a.date && a.date.substring(0, 10) === dateStr
+      a.date === fullDateStr
     );
     
     if (recordIndex !== -1) {
@@ -284,7 +296,7 @@ app.post('/api/portal/frequencia/justificar', authMiddleware, async (req, res) =
         id: `att-just-${Date.now()}`,
         studentId: req.user.studentId,
         classId: student?.classId || '',
-        date: dateStr,
+        date: fullDateStr,
         verified: false,
         type: 'absence',
         justification: justification.trim(),
@@ -293,12 +305,20 @@ app.post('/api/portal/frequencia/justificar', authMiddleware, async (req, res) =
       recordIndex = attendance.length - 1;
     }
     
-    // Create notification for the admin (visible in EduManager Admin Panel)
+    // Extract attachment if present for the notification
+    let attachment = null;
+    try {
+      const parsedJust = JSON.parse(justification);
+      attachment = parsedJust.arquivo_base64 || null;
+    } catch (e) {}
+
+    // Create notification for the admin
     notifications.push({
       id: `notif-${Date.now()}`,
-      studentId: 'admin', // EduManager expects 'admin' for school-wide admin notifications
+      studentId: 'admin',
       title: 'Nova Justificativa de Falta',
-      message: `O aluno ${student?.name || req.user.name} enviou uma justificativa para a aula de ${new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')}.`,
+      message: `${student?.name || 'Aluno'} enviou uma justificativa para a aula de ${date}.`,
+      attachment: attachment, // New field for the EduManager UI
       read: false,
       createdAt: new Date().toISOString(),
     });

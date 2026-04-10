@@ -47,9 +47,9 @@ export default function Frequencia() {
     if (token) fetchData();
   }, [token]);
 
-  const openJustifyModal = (preselectedDate?: string) => {
+  const openJustifyModal = (preselectedTimestamp?: string) => {
     setShowJustifyModal(true);
-    setSelectedDate(preselectedDate || '');
+    setSelectedDate(preselectedTimestamp || '');
     setJustificationText('');
     setJustificationFile(null);
     setError('');
@@ -67,9 +67,49 @@ export default function Frequencia() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Se não for imagem, apenas lê normalmente (ex: PDF)
+    if (!file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => setJustificationFile(reader.result as string);
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Lógica de Compactação para Imagens
     const reader = new FileReader();
-    reader.onload = () => {
-      setJustificationFile(reader.result as string);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Limite máximo de 1280px para largura ou altura
+        const MAX_SIZE = 1280;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          // Exporta como JPEG com 70% de qualidade para o melhor balanço tamanho/qualidade
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          setJustificationFile(compressedBase64);
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
@@ -393,44 +433,47 @@ export default function Frequencia() {
                         )}
                       </td>
                       <td>
-                        {lesson.status === 'cancelled' ? (
-                          <span style={{
-                            background: 'var(--color-danger)', color: 'white',
-                            padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
-                          }}>
-                            CANCELADA
-                          </span>
-                        ) : isInProgress ? (
-                           <span className="animate-pulse" style={{
-                             background: 'var(--color-info)', color: 'white',
-                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
-                             display: 'inline-flex', alignItems: 'center', gap: 4,
-                           }}>
-                             <Clock size={12} /> • AULA EM ANDAMENTO
-                           </span>
-                        ) : lesson.status === 'rescheduled' ? (
-                           <span style={{
-                             background: 'var(--color-warning)', color: 'white',
-                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
-                           }}>
-                             REAGENDADA
-                           </span>
-                        ) : isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime() ? (
-                           <span style={{
-                             background: 'var(--color-success)', color: 'white',
-                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
-                             display: 'inline-flex', alignItems: 'center', gap: 4
-                           }}>
-                             <CheckCircle2 size={12} /> CONCLUÍDA
-                           </span>
-                        ) : (
-                           <span style={{
-                             background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
-                             padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
-                           }}>
-                             AGENDADA
-                           </span>
-                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {isInProgress && (
+                            <span className="animate-pulse" style={{
+                              background: 'var(--color-info)', color: 'white',
+                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                              display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content'
+                            }}>
+                              <Clock size={12} /> • AULA EM ANDAMENTO
+                            </span>
+                          )}
+                          {isCancelled ? (
+                            <span style={{
+                              background: 'var(--color-danger)', color: 'white',
+                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600, width: 'fit-content'
+                            }}>
+                              CANCELADA
+                            </span>
+                          ) : isRescheduled ? (
+                            <span style={{
+                              background: '#8b5cf6', color: 'white',
+                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600, width: 'fit-content'
+                            }}>
+                              REAGENDADA
+                            </span>
+                          ) : isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime() ? (
+                            <span style={{
+                              background: 'var(--color-success)', color: 'white',
+                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
+                              display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content'
+                            }}>
+                              <CheckCircle2 size={12} /> CONCLUÍDA
+                            </span>
+                          ) : (
+                            <span style={{
+                              background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
+                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600, width: 'fit-content'
+                            }}>
+                              AGENDADA
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         {isPresent ? (
@@ -470,7 +513,11 @@ export default function Frequencia() {
                                     color: 'var(--color-text-secondary)', 
                                     fontWeight: 500,
                                     display: 'block',
-                                    background: 'var(--bg-primary-alpha)',
+                                    borderLeft: isCancelled ? '4px solid var(--color-danger)'
+                                      : isInProgress && !isCancelled ? '4px solid var(--color-info)'
+                                      : isRescheduled ? '4px solid #8b5cf6'
+                                      : isCompleted ? '4px solid var(--color-success)'
+                                      : '4px solid var(--color-primary)',
                                     padding: '2px 6px',
                                     borderRadius: 4,
                                     width: 'fit-content'
@@ -495,7 +542,10 @@ export default function Frequencia() {
                           </span>
                         ) : canJustify ? (
                           <button
-                            onClick={() => openJustifyModal(lesson.date)}
+                            onClick={() => {
+                              const timestamp = new Date(parseLessonDateTime(lesson.date, lesson.startTime || '00:00:00')).toISOString();
+                              openJustifyModal(timestamp);
+                            }}
                             style={{
                               fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: 8,
                               background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)',
@@ -598,11 +648,14 @@ export default function Frequencia() {
                         const msB = parseLessonDateTime(b.date, b.startTime);
                         return (isNaN(msB) ? 0 : msB) - (isNaN(msA) ? 0 : msA);
                       })
-                      .map(l => (
-                        <option key={l.id} value={l.date}>
-                          {formatDateFull(l.date)}{l.startTime ? ` — ${l.startTime.substring(0, 5)}` : ''}{l.endTime ? ` às ${l.endTime.substring(0, 5)}` : ''}
-                        </option>
-                      ))
+                      .map(l => {
+                        const ts = new Date(parseLessonDateTime(l.date, l.startTime || '00:00:00')).toISOString();
+                        return (
+                          <option key={l.id} value={ts}>
+                            {formatDateFull(l.date)}{l.startTime ? ` — ${l.startTime.substring(0, 5)}` : ''}{l.endTime ? ` às ${l.endTime.substring(0, 5)}` : ''}
+                          </option>
+                        );
+                      })
                     }
                   </select>
                   <ChevronDown size={18} style={{
