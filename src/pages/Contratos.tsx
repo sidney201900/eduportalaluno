@@ -16,14 +16,40 @@ export default function Contratos() {
     if (printWindow) {
       printWindow.document.write(`
         <html>
-          <head><title>${viewingContract.title}</title>
-          <style>body { font-family: 'Inter', sans-serif; padding: 2rem; color: #1a1a1a; line-height: 1.6; text-align: justify; }</style>
+          <head>
+            <title>${viewingContract.title}</title>
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+              body { 
+                font-family: 'Inter', sans-serif; 
+                padding: 40px; 
+                color: #1a1a1a; 
+                line-height: 1.8; 
+                text-align: justify;
+                white-space: pre-line;
+                font-size: 12pt;
+              }
+              p, div { margin-bottom: 1rem; text-indent: 2.5rem; }
+              h1, h2, h3, h4 { 
+                text-align: center; 
+                margin: 1.5rem 0 1rem; 
+                text-indent: 0; 
+                font-weight: 700; 
+                text-transform: uppercase;
+              }
+              ul, ol { padding-left: 3rem; margin-bottom: 1rem; }
+              li { margin-bottom: 0.5rem; }
+              @page { margin: 2cm; }
+            </style>
           </head>
           <body>${viewingContract.content}</body>
         </html>
       `);
       printWindow.document.close();
-      printWindow.print();
+      // Wait for font loading
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
     }
   };
 

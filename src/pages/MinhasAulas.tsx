@@ -9,10 +9,10 @@ export default function MinhasAulas() {
   const { token } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [activeTab, setActiveTab] = useState<'scheduled' | 'history'>('scheduled');
   
   // MUST be called logically at the top level
-  const now = useRealTimeDate(30000);
+  const now = useRealTimeDate(10000); // 10s updates
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,15 +59,25 @@ export default function MinhasAulas() {
 
   const nowTime = now.getTime();
 
-  const sortedLessons = [...lessons].sort((a, b) => {
-    const dateA = parseLessonDateTime(a.date, a.startTime);
-    const dateB = parseLessonDateTime(b.date, b.startTime);
-    
-    const timeA = isNaN(dateA) ? 0 : dateA;
-    const timeB = isNaN(dateB) ? 0 : dateB;
-    
-    return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+  // Process and group lessons
+  const processedLessons = lessons.map(l => ({
+    ...l,
+    ...getLessonTimeStatus(l, now)
+  }));
+
+  const activeLessons = processedLessons.filter(l => !l.isCompleted && l.status !== 'cancelled').sort((a, b) => {
+    const timeA = parseLessonDateTime(a.date, a.startTime, 0);
+    const timeB = parseLessonDateTime(b.date, b.startTime, 0);
+    return timeA - timeB;
   });
+
+  const historyLessons = processedLessons.filter(l => l.isCompleted || l.status === 'cancelled').sort((a, b) => {
+    const timeA = parseLessonDateTime(a.date, a.startTime, 0);
+    const timeB = parseLessonDateTime(b.date, b.startTime, 0);
+    return timeB - timeA; // History is descending
+  });
+
+  const displayLessons = activeTab === 'scheduled' ? activeLessons : historyLessons;
 
   return (
     <div className="page-container">
@@ -77,21 +87,37 @@ export default function MinhasAulas() {
           50% { opacity: 0.6; }
         }
       `}</style>
-      <div className="animate-fade-in" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 className="page-title">Cronograma de Aulas</h1>
-          <p className="page-subtitle">Acompanhe suas aulas e reposições agendadas</p>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>ORDEM:</span>
-          <button
-            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', borderRadius: 12, height: 'auto', fontSize: '0.8125rem' }}
-          >
-            {sortOrder === 'asc' ? 'Crescente (Próximas)' : 'Decrescente (Antigas)'}
-          </button>
+      <div className="animate-fade-in" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 className="page-title">Cronograma de Aulas</h1>
+            <p className="page-subtitle">Acompanhe suas aulas e reposições agendadas</p>
+          </div>
+
+          <div className="glass-card" style={{ padding: '4px', display: 'flex', gap: '4px', borderRadius: 12 }}>
+            <button
+              onClick={() => setActiveTab('scheduled')}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
+                background: activeTab === 'scheduled' ? 'var(--color-primary)' : 'transparent',
+                color: activeTab === 'scheduled' ? 'white' : 'var(--color-text-secondary)',
+              }}
+            >
+              Aulas Agendadas ({activeLessons.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
+                background: activeTab === 'history' ? 'var(--color-primary)' : 'transparent',
+                color: activeTab === 'history' ? 'white' : 'var(--color-text-secondary)',
+              }}
+            >
+              Histórico ({historyLessons.length})
+            </button>
+          </div>
         </div>
       </div>
 

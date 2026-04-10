@@ -9,6 +9,7 @@ export default function Frequencia() {
   const { token } = useAuth();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [activeTab, setActiveTab] = useState<'scheduled' | 'history'>('scheduled');
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -144,25 +145,36 @@ export default function Frequencia() {
   const absences = totalRecords - presences;
   const percentage = totalRecords > 0 ? Math.round((presences / totalRecords) * 100) : 100;
 
-  // Merge lessons and attendance to show a complete history
-  const mergedItems = lessons.map(lesson => {
+  // Merge and Categorize
+  const processedItems = lessons.map(lesson => {
     const lessonDate = getNormalizedDate(lesson.date || '');
     const atts = attendance.filter(a => {
       if (!a.date || typeof a.date !== 'string') return false;
       return getNormalizedDate(a.date) === lessonDate;
     });
-    return { lesson, attendances: atts };
+    
+    const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
+    return { 
+      lesson, 
+      attendances: atts,
+      isInProgress,
+      isCompleted
+    };
   });
 
-  const sortedItems = [...mergedItems].sort((a, b) => {
-    const dateA = parseLessonDateTime(a.lesson.date, a.lesson.startTime);
-    const dateB = parseLessonDateTime(b.lesson.date, b.lesson.startTime);
-    
-    const timeA = isNaN(dateA) ? 0 : dateA;
-    const timeB = isNaN(dateB) ? 0 : dateB;
-    
-    return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+  const activeItems = processedItems.filter(item => !item.isCompleted && item.lesson.status !== 'cancelled').sort((a, b) => {
+    const dateA = parseLessonDateTime(a.lesson.date, a.lesson.startTime, 0);
+    const dateB = parseLessonDateTime(b.lesson.date, b.lesson.startTime, 0);
+    return dateA - dateB;
   });
+
+  const historyItems = processedItems.filter(item => item.isCompleted || item.lesson.status === 'cancelled').sort((a, b) => {
+    const dateA = parseLessonDateTime(a.lesson.date, a.lesson.startTime, 0);
+    const dateB = parseLessonDateTime(b.lesson.date, b.lesson.startTime, 0);
+    return dateB - dateA; // History descending
+  });
+
+  const displayItems = activeTab === 'scheduled' ? activeItems : historyItems;
 
   // Collect lessons available for justification modal dropdown
   const justifiableLessons = lessons.filter(l => {
@@ -224,28 +236,48 @@ export default function Frequencia() {
           50% { opacity: 0.6; }
         }
       `}</style>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <div className="animate-fade-in">
-          <h1 className="page-title">Frequência</h1>
-          <p className="page-subtitle">Seu histórico de presença e justificativas</p>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>ORDEM:</span>
-          <button
-            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', borderRadius: 12, height: 'auto', fontSize: '0.8125rem' }}
-          >
-            {sortOrder === 'asc' ? 'Crescente (Antigos)' : 'Decrescente (Novos)'}
-          </button>
-          <button
-            onClick={() => openJustifyModal()}
-            className="btn-primary"
-            style={{ padding: '0.5rem 1.25rem', borderRadius: 12, height: 'auto' }}
-          >
-            <Send size={18} /> Justificar Falta
-          </button>
+      
+      <div className="animate-fade-in" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 className="page-title">Frequência</h1>
+            <p className="page-subtitle">Acompanhe seu histórico de presença e justificativas</p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+             <div className="glass-card" style={{ padding: '4px', display: 'flex', gap: '4px', borderRadius: 12 }}>
+              <button
+                onClick={() => setActiveTab('scheduled')}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
+                  background: activeTab === 'scheduled' ? 'var(--color-primary)' : 'transparent',
+                  color: activeTab === 'scheduled' ? 'white' : 'var(--color-text-secondary)',
+                }}
+              >
+                Próximas Aulas ({activeItems.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
+                  background: activeTab === 'history' ? 'var(--color-primary)' : 'transparent',
+                  color: activeTab === 'history' ? 'white' : 'var(--color-text-secondary)',
+                }}
+              >
+                Histórico ({historyItems.length})
+              </button>
+            </div>
+            
+            <button
+              onClick={() => openJustifyModal()}
+              className="btn-primary"
+              style={{ padding: '0.5rem 1.25rem', borderRadius: 12, height: 'auto' }}
+            >
+              <Send size={18} /> Justificar Falta
+            </button>
+          </div>
         </div>
       </div>
 
@@ -331,8 +363,8 @@ export default function Frequencia() {
                 </tr>
               </thead>
               <tbody>
-                {sortedItems.map((item, idx) => {
-                  const { lesson, attendances: atts } = item;
+                {displayItems.map((item, idx) => {
+                  const { lesson, attendances: atts, isInProgress, isCompleted } = item;
                   
                   // PREREQUISITE: Only 'presence' type counts as real presence
                   const isPresent = atts.some(a => a.type === 'presence');
