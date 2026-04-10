@@ -217,7 +217,7 @@ export default function MinhasAulas() {
                       </span>
                     )}
 
-                    {isCompleted && !isCancelled && !isRescheduled && !isInProgress && (
+                    {isCompleted && !isCancelled && !isInProgress && (
                       <span style={{
                         background: 'var(--color-success)', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,

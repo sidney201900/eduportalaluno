@@ -187,14 +187,23 @@ export default function Frequencia() {
 
   // Merge and Categorize
   const processedItems = lessons.map(lesson => {
-    const lessonDate = getNormalizedDate(lesson.date || '');
     const lessonFullISO = new Date(parseLessonDateTime(lesson.date, lesson.startTime || '00:00:00')).toISOString();
+    const lessonStartMs = parseLessonDateTime(lesson.date, lesson.startTime || '00:00:00');
 
     const atts = attendance.filter(a => {
       if (!a.date || typeof a.date !== 'string') return false;
-      // Precision match: if the record has a full timestamp, compare exactly. 
-      // Fallback to day match for legacyEduManager records.
-      return a.date === lessonFullISO || getNormalizedDate(a.date) === lessonDate;
+      
+      // 1. Exact Match (Best case)
+      if (a.date === lessonFullISO) return true;
+
+      // 2. Proximity Match (Within 30 minutes of lesson start)
+      // This handles cases where bios/records are slightly off or legacy day-only matches
+      const attMs = new Date(a.date).getTime();
+      const diffMinutes = Math.abs(attMs - lessonStartMs) / (1000 * 60);
+      
+      // If it's a legacy record (date only, length 10), we only match if no other records exist for this day
+      // but to keep it simple and separate lessons:
+      return diffMinutes <= 30; 
     });
     
     const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);

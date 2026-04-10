@@ -42,6 +42,11 @@ export default function Notas() {
     );
   }
 
+  // Calculate General Average
+  const totalAvg = grades.length > 0 
+    ? grades.reduce((s, g) => s + g.value, 0) / grades.length 
+    : 0;
+
   // Use subjects from course instead of deriving from grades
   const displaySubjects = allSubjects.length > 0 
     ? allSubjects 
@@ -58,9 +63,45 @@ export default function Notas() {
 
   return (
     <div className="page-container">
-      <div className="animate-fade-in" style={{ marginBottom: '1.5rem' }}>
-        <h1 className="page-title">Notas & Boletim</h1>
-        <p className="page-subtitle">Acompanhe seu desempenho acadêmico</p>
+      <div className="animate-fade-in" style={{ 
+        marginBottom: '2rem', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '1.5rem'
+      }}>
+        <div>
+          <h1 className="page-title">Notas & Boletim</h1>
+          <p className="page-subtitle">Acompanhe seu desempenho acadêmico</p>
+        </div>
+
+        {grades.length > 0 && (
+          <div className="glass-card" style={{ 
+            padding: '1.5rem 2.5rem', 
+            textAlign: 'center',
+            background: 'var(--bg-primary-alpha)',
+            border: '1px solid var(--color-primary-alpha)',
+            boxShadow: '0 10px 30px var(--color-primary-alpha)',
+            borderRadius: '24px'
+          }}>
+            <p style={{ 
+              fontSize: '0.75rem', 
+              fontWeight: 700, 
+              color: 'var(--color-primary)', 
+              letterSpacing: '0.1em', 
+              marginBottom: '0.5rem',
+              textTransform: 'uppercase'
+            }}>Média Geral</p>
+            <p style={{ 
+              fontSize: '3.5rem', 
+              fontWeight: 900, 
+              color: 'var(--color-text-primary)',
+              lineHeight: 1,
+              marginTop: 0
+            }}>{totalAvg.toFixed(1)}</p>
+          </div>
+        )}
       </div>
 
       {grades.length === 0 ? (

@@ -87,6 +87,12 @@ export function getLessonTimeStatus(lesson: Lesson, now = new Date()) {
   
   let startMs = parseLessonDateTime(lessonDateStr, startTime, 0);
   let endMs = parseLessonDateTime(lessonDateStr, endTime, 23);
+
+  // If endTime is missing, assume 1 hour duration
+  if (!endTime && !isNaN(startMs)) {
+    endMs = startMs + (60 * 60 * 1000);
+  }
+
   const nowMs = now.getTime();
 
   // If we couldn't parse dates, fallback

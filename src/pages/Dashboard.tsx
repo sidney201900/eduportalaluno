@@ -265,8 +265,15 @@ export default function Dashboard() {
               <CalendarClock size={22} color={isCurrentlyInProgress ? 'var(--color-info)' : 'var(--color-primary-light)'} />
             </div>
             <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                {isCurrentlyInProgress ? '🔴 • AULA EM ANDAMENTO' : 'PRÓXIMA AULA'}
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {isCurrentlyInProgress ? (
+                  <>
+                    <Clock size={14} color="var(--color-info)" className="animate-pulse" />
+                    <span style={{ color: 'var(--color-info)', fontWeight: 700 }}>AULA EM ANDAMENTO</span>
+                  </>
+                ) : (
+                  'PRÓXIMA AULA'
+                )}
               </p>
             </div>
           </div>
