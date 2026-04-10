@@ -262,7 +262,11 @@ export default function Dashboard() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               animation: isCurrentlyInProgress ? 'pulse-glow 2s infinite' : undefined,
             }}>
-              <CalendarClock size={22} color={isCurrentlyInProgress ? 'var(--color-info)' : 'var(--color-primary-light)'} />
+              {isCurrentlyInProgress ? (
+                <Clock size={22} color="var(--color-info)" />
+              ) : (
+                <CalendarClock size={22} color="var(--color-primary-light)" />
+              )}
             </div>
             <div>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -280,7 +284,7 @@ export default function Dashboard() {
           {nextClass ? (
             <>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2, color: isCurrentlyInProgress ? 'var(--color-info)' : undefined }}>
-                {nextClass.type === 'reposicao' ? 'Reposição' : 'Aula Regular'}
+                {nextClass.status === 'rescheduled' ? 'Reagendada' : (nextClass.type === 'reposicao' ? 'Reposição' : 'Aula Regular')}
               </h3>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
                 {formatDate(nextClass.date || '')}

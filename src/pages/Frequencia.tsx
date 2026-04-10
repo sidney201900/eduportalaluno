@@ -189,6 +189,7 @@ export default function Frequencia() {
   const processedItems = lessons.map(lesson => {
     const lessonFullISO = new Date(parseLessonDateTime(lesson.date, lesson.startTime || '00:00:00')).toISOString();
     const lessonStartMs = parseLessonDateTime(lesson.date, lesson.startTime || '00:00:00');
+    const lessonEndMs = parseLessonDateTime(lesson.date, lesson.endTime || '00:00:00', lesson.endTime ? 0 : 60);
 
     const atts = attendance.filter(a => {
       if (!a.date || typeof a.date !== 'string') return false;
@@ -196,14 +197,17 @@ export default function Frequencia() {
       // 1. Exact Match (Best case)
       if (a.date === lessonFullISO) return true;
 
-      // 2. Proximity Match (Within 30 minutes of lesson start)
-      // This handles cases where bios/records are slightly off or legacy day-only matches
       const attMs = new Date(a.date).getTime();
+
+      // 2. Presence Match (Biometrics)
+      // Allow any presence within the lesson duration (+ buffer)
+      if (a.type === 'presence') {
+        return attMs >= (lessonStartMs - 10 * 60000) && attMs <= (lessonEndMs + 5 * 60000);
+      }
+
+      // 3. Justification Proximity Match (Strict 10 mins from start)
       const diffMinutes = Math.abs(attMs - lessonStartMs) / (1000 * 60);
-      
-      // If it's a legacy record (date only, length 10), we only match if no other records exist for this day
-      // but to keep it simple and separate lessons:
-      return diffMinutes <= 30; 
+      return diffMinutes <= 10;
     });
     
     const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
