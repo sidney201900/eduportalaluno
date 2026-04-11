@@ -252,8 +252,12 @@ export default function Dashboard() {
         {/* Próxima Aula Card */}
         <div className="glass-card" style={{
           padding: '1.5rem',
-          borderLeft: isCurrentlyInProgress ? '4px solid var(--color-info)' : undefined,
-          background: isCurrentlyInProgress ? 'var(--bg-primary-alpha)' : undefined,
+          border: isCurrentlyInProgress ? '2px solid var(--color-info)' : undefined,
+          background: isCurrentlyInProgress 
+            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%)' 
+            : undefined,
+          boxShadow: isCurrentlyInProgress ? '0 0 30px rgba(59, 130, 246, 0.2)' : undefined,
+          animation: isCurrentlyInProgress ? 'pulse-glow 3s infinite' : undefined,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <div style={{
@@ -263,7 +267,7 @@ export default function Dashboard() {
               animation: isCurrentlyInProgress ? 'pulse-glow 2s infinite' : undefined,
             }}>
               {isCurrentlyInProgress ? (
-                <Clock size={22} color="var(--color-info)" />
+                <Clock size={22} color="white" />
               ) : (
                 <CalendarClock size={22} color="var(--color-primary-light)" />
               )}

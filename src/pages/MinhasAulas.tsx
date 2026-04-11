@@ -128,13 +128,13 @@ export default function MinhasAulas() {
             <p>Nenhuma aula encontrada no cronograma.</p>
           </div>
         ) : (
-          displayLessons.map(lesson => {
+          displayLessons.map((lesson, idx) => {
             const isCancelled = lesson.status === 'cancelled';
             const isRescheduled = lesson.status === 'rescheduled';
             const isReposicao = lesson.type === 'reposicao';
-            const dateStr = lesson.date;
             
             const { isInProgress, isCompleted } = getLessonTimeStatus(lesson, now);
+            const isAbsoluteNext = idx === 0 && !isInProgress && !isCancelled && !isCompleted;
 
             return (
               <div
@@ -144,10 +144,17 @@ export default function MinhasAulas() {
                   padding: '1.5rem',
                   opacity: isCancelled ? 0.55 : 1,
                   borderLeft: isCancelled ? '4px solid var(--color-danger)'
-                    : isInProgress && !isCancelled ? '4px solid var(--color-info)'
+                    : isInProgress && !isCancelled ? '4px solid var(--color-warning)'
+                    : isAbsoluteNext ? '4px solid var(--color-primary)'
                     : isRescheduled ? '4px solid #8b5cf6'
                     : isCompleted ? '4px solid var(--color-success)'
-                    : '4px solid var(--color-primary)',
+                    : '4px solid var(--color-success)',
+                  background: isInProgress && !isCancelled 
+                    ? 'linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 100%)' 
+                    : isAbsoluteNext ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, transparent 100%)'
+                    : undefined,
+                  boxShadow: isAbsoluteNext ? '0 4px 20px rgba(99, 102, 241, 0.12)' : undefined,
+                  animation: isInProgress && !isCancelled ? 'pulse 3s infinite' : undefined,
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
@@ -208,10 +215,10 @@ export default function MinhasAulas() {
 
                     {isInProgress && !isCancelled && (
                       <span className="animate-pulse" style={{
-                        background: 'var(--color-info)', color: 'white',
+                        background: 'var(--color-warning)', color: 'white',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
                         display: 'flex', alignItems: 'center', gap: 4,
-                        boxShadow: '0 0 15px var(--color-info-alpha)'
+                        boxShadow: '0 0 15px var(--bg-warning-alpha)'
                       }}>
                         <Clock size={12} /> EM ANDAMENTO
                       </span>
@@ -228,8 +235,9 @@ export default function MinhasAulas() {
 
                     {!isCancelled && !isCompleted && !isRescheduled && !isInProgress && (
                       <span style={{
-                        background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
+                        background: 'var(--bg-success-alpha)', color: 'var(--color-success)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
+                        border: '1px solid var(--border-success-alpha)'
                       }}>
                         AGENDADA
                       </span>

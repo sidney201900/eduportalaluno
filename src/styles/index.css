@@ -19,9 +19,11 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
+  --color-info: #3b82f6;
   --color-border: #334155;
 
   /* Alphas and Complex colors */
+  --bg-info-alpha: rgba(59, 130, 246, 0.15);
   --bg-primary-alpha: rgba(99, 102, 241, 0.15);
   --bg-accent-alpha: rgba(6, 182, 212, 0.15);
   --bg-danger-alpha: rgba(239, 68, 68, 0.15);

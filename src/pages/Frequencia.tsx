@@ -240,14 +240,24 @@ export default function Frequencia() {
     // Check window (uses new 24h before/after logic)
     if (!isLessonWithinJustificationWindow(l, now)) return false;
     
-    // Normalize lesson date for comparison
-    const lessonDate = getNormalizedDate(l.date || '');
+    const lessonFullISO = new Date(parseLessonDateTime(l.date, l.startTime || '00:00:00')).toISOString();
+    const lessonStartMs = parseLessonDateTime(l.date, l.startTime || '00:00:00');
+    const lessonEndMs = parseLessonDateTime(l.date, l.endTime || '00:00:00', l.endTime ? 0 : 60);
+
+    // Find if THIS SPECIFIC lesson has attendance/justification
     const att = attendance.find(a => {
       if (!a.date || typeof a.date !== 'string') return false;
-      return getNormalizedDate(a.date) === lessonDate;
+      const attMs = new Date(a.date).getTime();
+      
+      // Strict match by ISO or within duration for presence
+      if (a.date === lessonFullISO) return true;
+      if (a.type === 'presence' && attMs >= (lessonStartMs - 10 * 60000) && attMs <= (lessonEndMs + 5 * 60000)) return true;
+      
+      return false;
     });
+
     if (att) {
-      if (att.type === 'presence') return false;
+      if (att.type === 'presence' || att.verified) return false;
       if (att.justification) return false;
     }
     return true;
