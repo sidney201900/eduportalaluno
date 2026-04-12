@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ExternalLink, Filter, CreditCard, Printer, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import type { Payment, Boleto } from '../types';
 
 type FilterType = 'all' | 'pending' | 'paid' | 'overdue';
 
 export default function Financeiro() {
   const { token } = useAuth();
+  const [searchParams] = useSearchParams();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [boletos, setBoletos] = useState<Boleto[]>([]);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>((searchParams.get('filter') as FilterType) || 'all');
   const [loading, setLoading] = useState(true);
   const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -254,11 +256,12 @@ export default function Financeiro() {
             style={{
               padding: '0.4375rem 0.875rem', borderRadius: 9999,
               border: '1px solid',
-              borderColor: filter === f.key ? 'var(--color-primary)' : 'var(--color-border)',
-              background: filter === f.key ? 'var(--bg-primary-alpha)' : 'transparent',
-              color: filter === f.key ? 'var(--color-primary-light)' : 'var(--color-text-secondary)',
-              fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer',
+              borderColor: filter === f.key ? 'var(--color-success)' : 'var(--color-border)',
+              background: filter === f.key ? 'var(--color-success)' : 'transparent',
+              color: filter === f.key ? 'white' : 'var(--color-text-secondary)',
+              fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
               transition: 'all 0.2s ease', fontFamily: 'Inter, sans-serif',
+              boxShadow: filter === f.key ? '0 4px 12px var(--bg-success-alpha)' : 'none',
             }}
           >
             {f.label}

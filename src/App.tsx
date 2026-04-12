@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -13,12 +13,69 @@ import MeusDados from './pages/MeusDados';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
+import { useState, useEffect } from 'react';
+import { AlertCircle } from 'lucide-react';
+
 function AppLayout() {
+  const { token } = useAuth();
+  const [overdueCount, setOverdueCount] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    const checkFinance = async () => {
+      try {
+        const res = await fetch('/api/portal/financeiro', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const atrasadas = (data.payments || []).filter((p: any) => p.status === 'atrasada').length;
+          setOverdueCount(atrasadas);
+        }
+      } catch (err) {
+        console.error('Erro ao verificar financeiro:', err);
+      }
+    };
+    
+    checkFinance();
+    const interval = setInterval(checkFinance, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [token]);
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-surface)' }}>
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Header />
+        
+        {overdueCount > 0 && (
+          <div style={{
+            background: 'var(--color-danger)',
+            color: 'white',
+            padding: '10px 1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            zIndex: 90,
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <AlertCircle size={18} />
+            <span>Atenção: Você possui {overdueCount} {overdueCount === 1 ? 'parcela atrasada' : 'parcelas atrasadas'}. Por favor, regularize seu financeiro.</span>
+            <Link to="/financeiro?filter=overdue" style={{ 
+              color: 'white', 
+              textDecoration: 'underline', 
+              marginLeft: '10px',
+              fontSize: '0.8rem',
+              opacity: 0.9,
+              fontWeight: 700
+            }}>Ver parcelas atrasadas</Link>
+          </div>
+        )}
+
         <main style={{ flex: 1, overflow: 'auto' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />

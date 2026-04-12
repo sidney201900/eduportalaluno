@@ -22,13 +22,35 @@ export default function Notifications() {
   const fetchNotifications = useCallback(async () => {
     if (!token) return;
     try {
+      // Fetch core notifications
       const res = await fetch('/api/portal/notificacoes', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.notifications) {
-        setNotifications(data.notifications);
+      let allNotifs = data.notifications || [];
+
+      // Fetch financial status for dynamic alert
+      const finRes = await fetch('/api/portal/financeiro', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (finRes.ok) {
+        const finData = await finRes.json();
+        const atrasadas = (finData.payments || []).filter((p: any) => p.status === 'atrasada');
+        
+        if (atrasadas.length > 0) {
+          const overdueNotif: PortalNotification = {
+            id: 'finance-overdue',
+            title: 'Pagamento Pendente',
+            message: `Identificamos ${atrasadas.length} ${atrasadas.length === 1 ? 'parcela atrasada' : 'parcelas atrasadas'}. Regularize agora para evitar suspensões.`,
+            read: false,
+            createdAt: new Date().toISOString(),
+            type: 'alert'
+          };
+          allNotifs = [overdueNotif, ...allNotifs];
+        }
       }
+
+      setNotifications(allNotifs);
     } catch (err) {
       console.error('Erro ao buscar notificações', err);
     }

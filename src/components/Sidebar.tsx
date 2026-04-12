@@ -199,10 +199,9 @@ export default function Sidebar() {
                 textDecoration: 'none', fontSize: '0.875rem', fontWeight: 500,
                 transition: 'all 0.2s ease',
                 color: isActive ? 'white' : 'var(--color-text-secondary)',
-                background: isActive
-                  ? 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, var(--bg-accent-alpha) 100%)'
-                  : 'transparent',
-                borderLeft: isActive ? '3px solid var(--color-primary)' : '3px solid transparent',
+                background: isActive ? 'var(--color-success)' : 'transparent',
+                boxShadow: isActive ? '0 4px 12px var(--bg-success-alpha)' : 'none',
+                borderLeft: isActive ? '4px solid var(--color-success)' : '4px solid transparent',
               })}
             >
               <item.icon size={20} />
