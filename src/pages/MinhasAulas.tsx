@@ -205,9 +205,10 @@ export default function MinhasAulas() {
 
                     {isRescheduled && !isInProgress && (
                       <span style={{
-                        background: '#8b5cf6', color: 'white',
+                        background: 'var(--bg-warning-alpha)', color: 'var(--color-warning)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
-                        boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)'
+                        border: '1px solid var(--bg-warning-alpha)',
+                        display: 'flex', alignItems: 'center', gap: 4
                       }}>
                         REAGENDADA
                       </span>
@@ -226,8 +227,10 @@ export default function MinhasAulas() {
 
                     {isCompleted && !isCancelled && !isInProgress && (
                       <span style={{
-                        background: 'var(--color-success)', color: 'white',
+                        background: 'var(--bg-success-alpha)', color: 'var(--color-success)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
+                        border: '1px solid var(--bg-success-alpha)',
+                        display: 'flex', alignItems: 'center', gap: 4
                       }}>
                         CONCLUÍDA
                       </span>
@@ -235,9 +238,10 @@ export default function MinhasAulas() {
 
                     {!isCancelled && !isCompleted && !isRescheduled && !isInProgress && (
                       <span style={{
-                        background: 'var(--bg-success-alpha)', color: 'var(--color-success)',
+                        background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600,
-                        border: '1px solid var(--border-success-alpha)'
+                        border: '1px solid var(--bg-primary-alpha)',
+                        display: 'flex', alignItems: 'center', gap: 4
                       }}>
                         AGENDADA
                       </span>

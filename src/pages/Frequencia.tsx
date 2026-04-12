@@ -310,41 +310,6 @@ export default function Frequencia() {
             <h1 className="page-title">Frequência</h1>
             <p className="page-subtitle">Acompanhe seu histórico de presença e justificativas</p>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-             <div className="glass-card" style={{ padding: '4px', display: 'flex', gap: '4px', borderRadius: 12 }}>
-              <button
-                onClick={() => setActiveTab('scheduled')}
-                style={{
-                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
-                  background: activeTab === 'scheduled' ? 'var(--color-primary)' : 'transparent',
-                  color: activeTab === 'scheduled' ? 'white' : 'var(--color-text-secondary)',
-                }}
-              >
-                Próximas Aulas ({activeItems.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                style={{
-                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
-                  background: activeTab === 'history' ? 'var(--color-primary)' : 'transparent',
-                  color: activeTab === 'history' ? 'white' : 'var(--color-text-secondary)',
-                }}
-              >
-                Histórico ({historyItems.length})
-              </button>
-            </div>
-            
-            <button
-              onClick={() => openJustifyModal()}
-              className="btn-primary"
-              style={{ padding: '0.5rem 1.25rem', borderRadius: 12, height: 'auto' }}
-            >
-              <Send size={18} /> Justificar Falta
-            </button>
-          </div>
         </div>
       </div>
 
@@ -404,6 +369,48 @@ export default function Frequencia() {
             TOTAL DE REGISTROS
           </p>
         </div>
+      </div>
+
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        gap: '1rem', 
+        marginBottom: '1.5rem',
+        flexWrap: 'wrap'
+      }}>
+        <div className="glass-card" style={{ padding: '4px', display: 'flex', gap: '4px', borderRadius: 12 }}>
+          <button
+            onClick={() => setActiveTab('scheduled')}
+            style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
+              background: activeTab === 'scheduled' ? 'var(--color-primary)' : 'transparent',
+              color: activeTab === 'scheduled' ? 'white' : 'var(--color-text-secondary)',
+            }}
+          >
+            Próximas Aulas ({activeItems.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
+              background: activeTab === 'history' ? 'var(--color-primary)' : 'transparent',
+              color: activeTab === 'history' ? 'white' : 'var(--color-text-secondary)',
+            }}
+          >
+            Histórico ({historyItems.length})
+          </button>
+        </div>
+        
+        <button
+          onClick={() => openJustifyModal()}
+          className="btn-primary"
+          style={{ padding: '0.5rem 1.25rem', borderRadius: 12, height: 'auto' }}
+        >
+          <Send size={18} /> Justificar Falta
+        </button>
       </div>
 
       {/* List */}
@@ -517,7 +524,7 @@ export default function Frequencia() {
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-info)', fontWeight: 500 }}>
                             <Clock size={16} /> Justificativa Pendente
                           </span>
-                        ) : (isInProgress || isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime()) ? (
+                        ) : (isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime()) ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
                             <XCircle size={16} /> Falta
                           </span>
