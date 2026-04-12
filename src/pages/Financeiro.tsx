@@ -17,6 +17,13 @@ export default function Financeiro() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
+    const urlFilter = searchParams.get('filter') as FilterType;
+    if (urlFilter && ['all', 'pending', 'paid', 'overdue'].includes(urlFilter)) {
+      setFilter(urlFilter);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const headers = { Authorization: `Bearer ${token}` };
@@ -43,21 +50,32 @@ export default function Financeiro() {
     };
     if (token) fetchData();
   }, [token]);
-  const normalizeStatus = (status: string) => {
-    const s = status?.toLowerCase();
+  const normalizeStatus = (payment: Payment) => {
+    const s = payment.status?.toLowerCase();
     if (['paid', 'received', 'confirmed', 'pago'].includes(s)) return 'paid';
-    if (['pending', 'pendente'].includes(s)) return 'pending';
-    if (['overdue', 'atrasado'].includes(s)) return 'overdue';
     if (['cancelled', 'cancelado'].includes(s)) return 'cancelled';
+    
+    // Check if explicitly overdue
+    if (['overdue', 'atrasado', 'atrasada'].includes(s)) return 'overdue';
+    
+    // Check if functionally overdue (pending + date passed)
+    if (s === 'pending' || s === 'pendente') {
+      const dueDate = new Date(payment.dueDate);
+      if (!isNaN(dueDate.getTime()) && dueDate < new Date()) {
+        return 'overdue';
+      }
+      return 'pending';
+    }
+    
     return s;
   };
 
-  const isPaid = (status: string) => normalizeStatus(status) === 'paid';
-  const isPending = (status: string) => ['pending', 'overdue'].includes(normalizeStatus(status));
+  const isPaid = (p: Payment) => normalizeStatus(p) === 'paid';
+  const isPending = (p: Payment) => ['pending', 'overdue'].includes(normalizeStatus(p));
 
   const filtered = payments.filter(p => {
     if (filter === 'all') return true;
-    return normalizeStatus(p.status) === filter;
+    return normalizeStatus(p) === filter;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -74,8 +92,8 @@ export default function Financeiro() {
     return date.toLocaleDateString('pt-BR');
   };
 
-  const getStatusBadge = (status: string) => {
-    const norm = normalizeStatus(status);
+  const getStatusBadge = (p: Payment) => {
+    const norm = normalizeStatus(p);
     const map: Record<string, { className: string; label: string }> = {
       paid: { className: 'badge badge-success', label: 'Pago' },
       pending: { className: 'badge badge-warning', label: 'Pendente' },
@@ -142,7 +160,7 @@ export default function Financeiro() {
     const baseAmount = payment.amount || 0;
     const discount = payment.discount || 0;
     const netAmount = baseAmount - discount;
-    const status = normalizeStatus(payment.status);
+    const status = normalizeStatus(payment);
 
     // Try to find matching boleto from Supabase sync 
     const asaasId = payment.asaasPaymentId || (payment as any).asaas_payment_id;
@@ -182,11 +200,11 @@ export default function Financeiro() {
   };
 
   const totalPending = payments
-    .filter(p => isPending(p.status))
+    .filter(p => isPending(p))
     .reduce((s, p) => s + getEffectiveValue(p), 0);
 
   const totalPaid = payments
-    .filter(p => isPaid(p.status))
+    .filter(p => isPaid(p))
     .reduce((s, p) => s + getEffectiveValue(p), 0);
 
   const filters: { key: FilterType; label: string }[] = [
@@ -332,13 +350,13 @@ export default function Financeiro() {
                       </td>
                       <td style={{ 
                         fontWeight: 600, 
-                        color: normalizeStatus(payment.status) === 'overdue' ? 'var(--color-danger)' : 'var(--color-primary-light)' 
+                        color: normalizeStatus(payment) === 'overdue' ? 'var(--color-danger)' : 'var(--color-primary-light)' 
                       }}>
                         {formatCurrency(getEffectiveValue(payment))}
                       </td>
-                      <td>{getStatusBadge(payment.status)}</td>
+                      <td data-label="Status">{getStatusBadge(payment)}</td>
                       <td>
-                        {isPaid(payment.status) ? (
+                        {isPaid(payment) ? (
                           <button
                             onClick={() => handleOpenReceipt(payment)}
                             style={{

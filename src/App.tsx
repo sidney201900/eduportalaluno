@@ -20,6 +20,26 @@ function AppLayout() {
   const { token } = useAuth();
   const [overdueCount, setOverdueCount] = useState(0);
 
+  const normalizeStatus = (payment: any) => {
+    const s = payment.status?.toLowerCase();
+    if (['paid', 'received', 'confirmed', 'pago'].includes(s)) return 'paid';
+    if (['cancelled', 'cancelado'].includes(s)) return 'cancelled';
+    
+    // Check if explicitly overdue
+    if (['overdue', 'atrasado', 'atrasada'].includes(s)) return 'overdue';
+    
+    // Check if functionally overdue (pending + date passed)
+    if (s === 'pending' || s === 'pendente') {
+      const dueDate = new Date(payment.dueDate);
+      // Normalize 'now' to match 'dueDate' midnight for a fair comparison
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return !isNaN(dueDate.getTime()) && dueDate < today ? 'overdue' : 'pending';
+    }
+    
+    return s;
+  };
+
   useEffect(() => {
     if (!token) return;
     const checkFinance = async () => {
@@ -29,7 +49,9 @@ function AppLayout() {
         });
         if (res.ok) {
           const data = await res.json();
-          const atrasadas = (data.payments || []).filter((p: any) => p.status === 'atrasada').length;
+          const atrasadas = (data.payments || []).filter((p: any) => 
+            normalizeStatus(p) === 'overdue'
+          ).length;
           setOverdueCount(atrasadas);
         }
       } catch (err) {
