@@ -69,8 +69,9 @@ export default function Dashboard() {
   const totalPending = pendingPayments.reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
 
   const totalAttendance = data?.attendance.length || 0;
+  const totalCourseLessons = data?.lessons.length || 0;
   const presences = data?.attendance.filter(a => a.type === 'presence').length || 0;
-  const frequencyPercent = totalAttendance > 0 ? Math.round((presences / totalAttendance) * 100) : 100;
+  const frequencyPercent = totalCourseLessons > 0 ? Math.round((presences / totalCourseLessons) * 100) : 0;
 
   const nextDue = pendingPayments
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0];
@@ -247,6 +248,16 @@ export default function Dashboard() {
               <Clock size={14} /> {data.studentClass.schedule}
             </p>
           )}
+          {data?.studentClass?.teacher && (
+            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--glass-border)' }}>
+              <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
+                Professor Responsável
+              </p>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                {data.studentClass.teacher}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Próxima Aula Card */}
@@ -373,7 +384,7 @@ export default function Dashboard() {
             {frequencyPercent}%
           </h3>
           <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
-            {presences} presença{presences !== 1 ? 's' : ''} de {totalAttendance} aula{totalAttendance !== 1 ? 's' : ''}
+            {presences} presença{presences !== 1 ? 's' : ''} de {totalCourseLessons} aula{totalCourseLessons !== 1 ? 's' : ''} do curso
           </p>
           <div style={{
             marginTop: '0.75rem', height: 6, borderRadius: 3,

@@ -179,11 +179,11 @@ export default function Frequencia() {
     );
   }
 
-  // Stats calculation (based on actual attendance records)
-  const totalRecords = attendance.length;
+  // Stats calculation (based on total course schedule vs presences)
+  const totalCourseLessons = lessons.length;
   const presences = attendance.filter(a => a.type === 'presence').length;
-  const absences = totalRecords - presences;
-  const percentage = totalRecords > 0 ? Math.round((presences / totalRecords) * 100) : 100;
+  const absences = attendance.filter(a => a.type === 'absence').length;
+  const percentage = totalCourseLessons > 0 ? Math.round((presences / totalCourseLessons) * 100) : 0;
 
   // Merge and Categorize
   const processedItems = lessons.map(lesson => {
@@ -364,9 +364,9 @@ export default function Frequencia() {
         </div>
 
         <div className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{totalRecords}</p>
+          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{totalCourseLessons}</p>
           <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, marginTop: 4 }}>
-            TOTAL DE REGISTROS
+            TOTAL DE AULAS DO CURSO
           </p>
         </div>
       </div>
