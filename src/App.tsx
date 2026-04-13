@@ -25,19 +25,11 @@ function AppLayout() {
     if (['paid', 'received', 'confirmed', 'pago'].includes(s)) return 'paid';
     if (['cancelled', 'cancelado'].includes(s)) return 'cancelled';
     
-    // Check if explicitly overdue
-    if (['overdue', 'atrasado', 'atrasada'].includes(s)) return 'overdue';
+    // Check if explicitly overdue in database
+    if (['overdue', 'atrasado', 'atrasada', 'vencido'].includes(s)) return 'overdue';
     
-    // Check if functionally overdue (pending + date passed)
-    if (s === 'pending' || s === 'pendente') {
-      const dueDate = new Date(payment.dueDate);
-      // Normalize 'now' to match 'dueDate' midnight for a fair comparison
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return !isNaN(dueDate.getTime()) && dueDate < today ? 'overdue' : 'pending';
-    }
-    
-    return s;
+    // Everything else that is not paid/cancelled is treated as pending
+    return 'pending';
   };
 
   useEffect(() => {

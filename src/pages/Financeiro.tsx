@@ -55,19 +55,10 @@ export default function Financeiro() {
     if (['paid', 'received', 'confirmed', 'pago'].includes(s)) return 'paid';
     if (['cancelled', 'cancelado'].includes(s)) return 'cancelled';
     
-    // Check if explicitly overdue
-    if (['overdue', 'atrasado', 'atrasada'].includes(s)) return 'overdue';
+    // Check if explicitly overdue in database
+    if (['overdue', 'atrasado', 'atrasada', 'vencido'].includes(s)) return 'overdue';
     
-    // Check if functionally overdue (pending + date passed)
-    if (s === 'pending' || s === 'pendente') {
-      const dueDate = new Date(payment.dueDate);
-      if (!isNaN(dueDate.getTime()) && dueDate < new Date()) {
-        return 'overdue';
-      }
-      return 'pending';
-    }
-    
-    return s;
+    return 'pending';
   };
 
   const isPaid = (p: Payment) => normalizeStatus(p) === 'paid';
