@@ -464,6 +464,42 @@ app.put('/api/portal/notificacoes/ler/:id', authMiddleware, async (req, res) => 
   }
 });
 
+// DELETE /api/portal/notificacoes/:id (delete notification from SchoolData JSON)
+app.delete('/api/portal/notificacoes/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: schoolRow, error: fetchError } = await supabase
+      .from('school_data')
+      .select('data')
+      .eq('id', 1)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const schoolData = schoolRow?.data || {};
+    const notifications = schoolData.notifications || [];
+
+    const newNotifications = notifications.filter(
+      n => !(n.id === id && n.studentId === req.user.studentId)
+    );
+    
+    schoolData.notifications = newNotifications;
+
+    const { error: updateError } = await supabase
+      .from('school_data')
+      .update({ data: schoolData })
+      .eq('id', 1);
+
+    if (updateError) throw updateError;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Notificacoes delete error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 // PUT /api/portal/alterar-senha
 app.put('/api/portal/alterar-senha', authMiddleware, async (req, res) => {
   try {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, AlertCircle, Info, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Notification as PortalNotification } from '../types';
 
@@ -63,6 +64,7 @@ export default function Notifications() {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
+  const navigate = useNavigate();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = async (id: string) => {
@@ -203,32 +205,45 @@ export default function Notifications() {
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {notifications.map(notif => {
                   const msgLower = (notif.title + ' ' + notif.message).toLowerCase();
-                  const isCancelamento = msgLower.includes('cancel');
+                  const isCancelamento = msgLower.includes('cancel') || msgLower.includes('exclu') || msgLower.includes('remov');
                   const isReposicao = msgLower.includes('reposi');
+                  const isExtra = msgLower.includes('extra');
+                  const isReagendamento = msgLower.includes('reagend') || msgLower.includes('altera');
 
                   return (
                     <div
                       key={notif.id}
-                      onClick={() => { if (!notif.read) markAsRead(notif.id); }}
+                      onClick={() => { 
+                        if (!notif.read) markAsRead(notif.id); 
+                        if (notif.id === 'finance-overdue') {
+                          navigate('/financeiro?filter=overdue');
+                          setIsOpen(false);
+                        } else if (isCancelamento || isReagendamento || isExtra || isReposicao) {
+                          navigate('/minhas-aulas');
+                          setIsOpen(false);
+                        }
+                      }}
                       style={{
                         padding: '1rem', borderBottom: '1px solid var(--glass-border)',
                         background: notif.read ? 'transparent' : 'var(--bg-primary-alpha)',
                         display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
                         transition: 'all 0.3s ease',
                         opacity: notif.read ? 0.5 : 1,
-                        cursor: notif.read ? 'default' : 'pointer',
+                        cursor: 'pointer',
                       }}
                     >
                       <div style={{
                         padding: 8, borderRadius: '50%', flexShrink: 0,
                         background: notif.read ? 'var(--color-surface-light)'
                           : isCancelamento ? 'var(--bg-danger-alpha)'
+                          : isReagendamento ? 'var(--bg-warning-alpha)'
                           : isReposicao ? 'var(--bg-success-alpha)'
+                          : isExtra ? 'rgba(147, 51, 234, 0.1)'
                           : 'var(--bg-primary-alpha)',
                       }}>
-                        {isCancelamento
-                          ? <AlertCircle size={16} color={notif.read ? 'var(--color-text-secondary)' : 'var(--color-danger)'} />
-                          : <Info size={16} color={notif.read ? 'var(--color-text-secondary)' : (isReposicao ? 'var(--color-success)' : 'var(--color-primary)')} />
+                        {isCancelamento || isReagendamento
+                          ? <AlertCircle size={16} color={notif.read ? 'var(--color-text-secondary)' : (isCancelamento ? 'var(--color-danger)' : 'var(--color-warning)')} />
+                          : <Info size={16} color={notif.read ? 'var(--color-text-secondary)' : (isExtra ? '#a855f7' : isReposicao ? 'var(--color-success)' : 'var(--color-primary)')} />
                         }
                       </div>
                       <div style={{ flex: 1 }}>

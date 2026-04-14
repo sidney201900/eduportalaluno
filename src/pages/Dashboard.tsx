@@ -263,7 +263,7 @@ export default function Dashboard() {
         {/* Próxima Aula Card */}
         <div className="glass-card" style={{
           padding: '1.5rem',
-          border: isCurrentlyInProgress ? '2px solid var(--color-info)' : undefined,
+          border: isCurrentlyInProgress || nextClass?.type === 'extra' ? `2px solid ${nextClass?.type === 'extra' ? '#a855f7' : 'var(--color-info)'}` : undefined,
             background: isCurrentlyInProgress 
               ? (nextClass?.type === 'extra' 
                   ? 'linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(168, 85, 247, 0.15) 100%)'

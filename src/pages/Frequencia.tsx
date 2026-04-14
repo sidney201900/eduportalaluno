@@ -469,7 +469,7 @@ export default function Frequencia() {
                         )}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                           {isInProgress && (
                             <span className="animate-pulse" style={{
                               background: lesson.type === 'extra' ? '#a855f7' : 'var(--color-info)', color: 'white',

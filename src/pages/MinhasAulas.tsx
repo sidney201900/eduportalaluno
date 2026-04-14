@@ -144,13 +144,15 @@ export default function MinhasAulas() {
                   padding: '1.5rem',
                   opacity: isCancelled ? 0.55 : 1,
                   borderLeft: isCancelled ? '4px solid var(--color-danger)'
-                    : isInProgress && !isCancelled ? '4px solid var(--color-warning)'
+                    : isInProgress && !isCancelled ? (lesson.type === 'extra' ? '4px solid #a855f7' : '4px solid var(--color-warning)')
+                    : lesson.type === 'extra' ? '4px solid #a855f7'
                     : isAbsoluteNext ? '4px solid var(--color-primary)'
                     : isRescheduled ? '4px solid #8b5cf6'
+                    : lesson.type === 'reposicao' ? '4px solid var(--color-success)'
                     : isCompleted ? '4px solid var(--color-success)'
                     : '4px solid var(--color-success)',
                   background: isInProgress && !isCancelled 
-                    ? 'linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 100%)' 
+                    ? (lesson.type === 'extra' ? 'linear-gradient(90deg, rgba(168, 85, 247, 0.08) 0%, transparent 100%)' : 'linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 100%)')
                     : isAbsoluteNext ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, transparent 100%)'
                     : undefined,
                   boxShadow: isAbsoluteNext ? '0 4px 20px rgba(99, 102, 241, 0.12)' : undefined,
@@ -175,17 +177,28 @@ export default function MinhasAulas() {
                         </div>
                       )}
                     </div>
-                    {isReposicao && (
-                      <div style={{ marginTop: '0.5rem' }}>
-                         <span style={{
-                          background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
-                          padding: '2px 8px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 600,
-                          border: '1px solid var(--color-primary-alpha)'
-                        }}>
-                          AULA DE REPOSIÇÃO
-                        </span>
+                    {(isReposicao || lesson.type === 'extra') && (
+                      <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {lesson.type === 'extra' && (
+                          <span style={{
+                            background: '#9333ea', color: 'white',
+                            padding: '2px 8px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 600,
+                            border: '1px solid rgba(147, 51, 234, 0.3)'
+                          }}>
+                            AULA EXTRA
+                          </span>
+                        )}
+                        {isReposicao && (
+                          <span style={{
+                            background: 'var(--bg-success-alpha)', color: 'var(--color-success)',
+                            padding: '2px 8px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 600,
+                            border: '1px solid var(--color-success-alpha)'
+                          }}>
+                            AULA DE REPOSIÇÃO
+                          </span>
+                        )}
                         {lesson.originalLessonId && (
-                           <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>
+                           <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', alignSelf: 'center' }}>
                              Ref. aula original
                            </span>
                         )}
@@ -193,7 +206,7 @@ export default function MinhasAulas() {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.5rem' }}>
                     {isCancelled && (
                       <span style={{
                         background: 'var(--color-danger)', color: 'white',
