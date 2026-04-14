@@ -264,42 +264,50 @@ export default function Dashboard() {
         <div className="glass-card" style={{
           padding: '1.5rem',
           border: isCurrentlyInProgress ? '2px solid var(--color-info)' : undefined,
-          background: isCurrentlyInProgress 
-            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%)' 
-            : undefined,
-          boxShadow: isCurrentlyInProgress ? '0 0 30px rgba(59, 130, 246, 0.2)' : undefined,
-          animation: isCurrentlyInProgress ? 'pulse-glow 3s infinite' : undefined,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 12,
-              background: isCurrentlyInProgress ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-primary-alpha)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              animation: isCurrentlyInProgress ? 'pulse-glow 2s infinite' : undefined,
-            }}>
-              {isCurrentlyInProgress ? (
-                <Clock size={22} color="white" />
-              ) : (
-                <CalendarClock size={22} color="var(--color-primary-light)" />
-              )}
-            </div>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+            background: isCurrentlyInProgress 
+              ? (nextClass?.type === 'extra' 
+                  ? 'linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(168, 85, 247, 0.15) 100%)'
+                  : nextClass?.type === 'reposicao'
+                  ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(22, 163, 74, 0.15) 100%)'
+                  : 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%)')
+              : undefined,
+            boxShadow: isCurrentlyInProgress 
+              ? (nextClass?.type === 'extra' ? '0 0 30px rgba(147, 51, 234, 0.2)' : nextClass?.type === 'reposicao' ? '0 0 30px rgba(34, 197, 94, 0.2)' : '0 0 30px rgba(59, 130, 246, 0.2)')
+              : undefined,
+            animation: isCurrentlyInProgress ? 'pulse-glow 3s infinite' : undefined,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: isCurrentlyInProgress 
+                  ? (nextClass?.type === 'extra' ? 'rgba(147, 51, 234, 0.15)' : nextClass?.type === 'reposicao' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)')
+                  : 'var(--bg-primary-alpha)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                animation: isCurrentlyInProgress ? 'pulse-glow 2s infinite' : undefined,
+              }}>
                 {isCurrentlyInProgress ? (
-                  <>
-                    <Clock size={14} color="var(--color-info)" className="animate-pulse" />
-                    <span style={{ color: 'var(--color-info)', fontWeight: 700 }}>AULA EM ANDAMENTO</span>
-                  </>
+                  <Clock size={22} color={nextClass?.type === 'extra' ? '#a855f7' : nextClass?.type === 'reposicao' ? '#22c55e' : 'white'} />
                 ) : (
-                  'PRÓXIMA AULA'
+                  <CalendarClock size={22} color={nextClass?.type === 'extra' ? '#a855f7' : nextClass?.type === 'reposicao' ? '#22c55e' : 'var(--color-primary-light)'} />
                 )}
-              </p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {isCurrentlyInProgress ? (
+                    <>
+                      <Clock size={14} color={nextClass?.type === 'extra' ? '#a855f7' : nextClass?.type === 'reposicao' ? '#22c55e' : 'var(--color-info)'} className="animate-pulse" />
+                      <span style={{ color: nextClass?.type === 'extra' ? '#a855f7' : nextClass?.type === 'reposicao' ? '#22c55e' : 'var(--color-info)', fontWeight: 700 }}>AULA EM ANDAMENTO</span>
+                    </>
+                  ) : (
+                    'PRÓXIMA AULA'
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
           {nextClass ? (
             <>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2, color: isCurrentlyInProgress ? 'var(--color-info)' : undefined }}>
-                {nextClass.status === 'rescheduled' ? 'Reagendada' : (nextClass.type === 'reposicao' ? 'Reposição' : 'Aula Regular')}
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2, color: isCurrentlyInProgress ? (nextClass.type === 'extra' ? '#a855f7' : nextClass.type === 'reposicao' ? '#22c55e' : 'var(--color-info)') : undefined }}>
+                {nextClass.status === 'rescheduled' ? 'Reagendada' : (nextClass.type === 'reposicao' ? 'Reposição' : (nextClass.type === 'extra' ? 'Aula Extra' : 'Aula Regular'))}
               </h3>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginTop: '0.375rem' }}>
                 {formatDate(nextClass.date || '')}
@@ -313,7 +321,7 @@ export default function Dashboard() {
                 <span className="animate-pulse" style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                   marginTop: '0.75rem', padding: '4px 10px', borderRadius: 6,
-                  background: 'var(--color-info)', color: 'white',
+                  background: nextClass.type === 'extra' ? '#a855f7' : nextClass.type === 'reposicao' ? '#22c55e' : 'var(--color-info)', color: 'white',
                   fontSize: '0.7rem', fontWeight: 600,
                 }}>
                   <Clock size={12} /> • AULA EM ANDAMENTO

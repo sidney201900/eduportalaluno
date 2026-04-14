@@ -472,7 +472,7 @@ export default function Frequencia() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           {isInProgress && (
                             <span className="animate-pulse" style={{
-                              background: 'var(--color-info)', color: 'white',
+                              background: lesson.type === 'extra' ? '#a855f7' : 'var(--color-info)', color: 'white',
                               padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
                               display: 'inline-flex', alignItems: 'center', gap: 4, width: 'fit-content'
                             }}>
@@ -493,7 +493,7 @@ export default function Frequencia() {
                             }}>
                               REAGENDADA
                             </span>
-                          ) : isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime() ? (
+                          ) : (isCompleted || parseLessonDateTime(lesson.date || '', '23:59:59') < now.getTime()) ? (
                             <span style={{
                               background: 'var(--color-success)', color: 'white',
                               padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600,
@@ -502,12 +502,30 @@ export default function Frequencia() {
                               <CheckCircle2 size={12} /> CONCLUÍDA
                             </span>
                           ) : (
-                            <span style={{
-                              background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
-                              padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600, width: 'fit-content'
-                            }}>
-                              AGENDADA
-                            </span>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              <span style={{
+                                background: 'var(--bg-primary-alpha)', color: 'var(--color-primary)',
+                                padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600, width: 'fit-content'
+                              }}>
+                                AGENDADA
+                              </span>
+                                {lesson.type === 'extra' && (
+                                  <span style={{
+                                    background: '#9333ea', color: 'white',
+                                    padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600, width: 'fit-content'
+                                  }}>
+                                    AULA EXTRA
+                                  </span>
+                                )}
+                                {lesson.type === 'reposicao' && (
+                                  <span style={{
+                                    background: '#22c55e', color: 'white',
+                                    padding: '4px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600, width: 'fit-content'
+                                  }}>
+                                    REPOSIÇÃO
+                                  </span>
+                                )}
+                              </div>
                           )}
                         </div>
                       </td>
