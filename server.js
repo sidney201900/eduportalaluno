@@ -654,6 +654,30 @@ app.post('/api/portal/avaliacoes/submeter', authMiddleware, async (req, res) => 
       throw new Error(`Erro no banco de dados: ${insertError.message}`);
     }
 
+    // Integrate with school_data.grades if subjectId and periodId are present
+    if (exam.subjectId && exam.periodId) {
+      const grades = schoolData.grades || [];
+      const existingGradeIndex = grades.findIndex(g => g.studentId === req.user.studentId && g.subjectId === exam.subjectId && g.period === exam.periodId);
+      
+      if (existingGradeIndex >= 0) {
+        grades[existingGradeIndex].value = finalScore;
+      } else {
+        grades.push({
+          id: `grade-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          studentId: req.user.studentId,
+          subjectId: exam.subjectId,
+          period: exam.periodId,
+          value: finalScore
+        });
+      }
+      schoolData.grades = grades;
+      
+      await supabase
+        .from('school_data')
+        .update({ data: schoolData })
+        .eq('id', 1);
+    }
+
     res.json({
       success: true,
       result: {

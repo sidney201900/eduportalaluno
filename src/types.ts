@@ -168,6 +168,7 @@ export interface Notification {
 export interface ExamQuestion {
   id: string;
   text: string;
+  imageUrl?: string;
   options: string[];
   correctOptionIndex: number;
 }

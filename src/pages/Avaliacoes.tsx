@@ -244,7 +244,7 @@ export default function Avaliacoes() {
           <div style={{ maxWidth: 700, width: '100%' }}>
             {question && (
               <div className="animate-fade-in" key={question.id}>
-                {/* Question Text */}
+                {/* Question Text & Image */}
                 <div className="glass-card" style={{
                   padding: '2rem', marginBottom: '1.5rem',
                   borderLeft: '4px solid var(--color-primary)',
@@ -256,9 +256,30 @@ export default function Avaliacoes() {
                   }}>
                     QUESTÃO {currentQ + 1}
                   </span>
-                  <p style={{ fontSize: '1.05rem', fontWeight: 500, lineHeight: 1.6 }}>
+                  <p style={{ fontSize: '1.05rem', fontWeight: 500, lineHeight: 1.6, marginBottom: question.imageUrl ? '1.5rem' : 0 }}>
                     {question.text}
                   </p>
+                  
+                  {question.imageUrl && (
+                    <div style={{ 
+                      marginTop: '1.5rem', 
+                      borderRadius: 12, 
+                      overflow: 'hidden',
+                      border: '2px solid var(--glass-border)',
+                      background: 'white',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                    }}>
+                      <div style={{ padding: '8px 12px', background: 'var(--bg-primary-alpha)', borderBottom: '1px solid var(--glass-border)', fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Imagem de Apoio
+                      </div>
+                      <img 
+                        src={question.imageUrl} 
+                        alt="Imagem de apoio" 
+                        style={{ width: '100%', height: 'auto', display: 'block', cursor: 'zoom-in' }} 
+                        onClick={() => window.open(question.imageUrl, '_blank')}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Options */}
