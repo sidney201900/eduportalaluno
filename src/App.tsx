@@ -10,6 +10,7 @@ import Frequencia from './pages/Frequencia';
 import Contratos from './pages/Contratos';
 import Certificados from './pages/Certificados';
 import MeusDados from './pages/MeusDados';
+import Avaliacoes from './pages/Avaliacoes';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
@@ -100,6 +101,7 @@ function AppLayout() {
             <Route path="/contratos" element={<Contratos />} />
             <Route path="/certificados" element={<Certificados />} />
             <Route path="/meus-dados" element={<MeusDados />} />
+            <Route path="/avaliacoes" element={<Avaliacoes />} />
           </Routes>
         </main>
       </div>

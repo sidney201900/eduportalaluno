@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, CreditCard, BookOpen, CalendarCheck, CalendarClock,
-  FileText, Award, User, LogOut, GraduationCap, X, Menu
+  FileText, Award, User, LogOut, GraduationCap, X, Menu, ClipboardList
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -11,6 +11,7 @@ const navItems = [
   { path: '/minhas-aulas', label: 'Cronograma', icon: CalendarClock },
   { path: '/financeiro', label: 'Financeiro', icon: CreditCard },
   { path: '/notas', label: 'Notas', icon: BookOpen },
+  { path: '/avaliacoes', label: 'Avaliações', icon: ClipboardList },
   { path: '/frequencia', label: 'Frequência', icon: CalendarCheck },
   { path: '/contratos', label: 'Contratos', icon: FileText },
   { path: '/certificados', label: 'Certificados', icon: Award },

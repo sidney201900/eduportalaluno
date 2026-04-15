@@ -555,6 +555,120 @@ app.put('/api/portal/alterar-senha', authMiddleware, async (req, res) => {
 });
 
 // ===================================================
+// AVALIAÇÕES (Exams)
+// ===================================================
+
+// GET /api/portal/avaliacoes - lista provas publicadas da turma do aluno
+app.get('/api/portal/avaliacoes', authMiddleware, async (req, res) => {
+  try {
+    const schoolData = await getSchoolData();
+    const student = (schoolData.students || []).find(s => s.id === req.user.studentId);
+    if (!student) return res.json({ exams: [], submissions: [] });
+
+    // Filter exams: published + same classId
+    const exams = (schoolData.exams || [])
+      .filter(e => e.status === 'published' && e.classId === student.classId)
+      .map(e => ({
+        ...e,
+        questions: e.questions.map(q => ({
+          id: q.id,
+          text: q.text,
+          options: q.options,
+          // Do NOT send correctOptionIndex to the client on listing
+        }))
+      }));
+
+    // Fetch previous submissions by this student
+    const { data: submissions } = await supabase
+      .from('provas_submissoes')
+      .select('*')
+      .eq('aluno_id', req.user.studentId);
+
+    res.json({ exams, submissions: submissions || [] });
+  } catch (err) {
+    console.error('Avaliacoes error:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// POST /api/portal/avaliacoes/submeter - envia e corrige a prova
+app.post('/api/portal/avaliacoes/submeter', authMiddleware, async (req, res) => {
+  try {
+    const { examId, answers } = req.body;
+    // answers = { "questionId": selectedOptionIndex, ... }
+
+    if (!examId || !answers) {
+      return res.status(400).json({ error: 'examId e answers são obrigatórios.' });
+    }
+
+    // Check if already submitted
+    const { data: existing } = await supabase
+      .from('provas_submissoes')
+      .select('id')
+      .eq('aluno_id', req.user.studentId)
+      .eq('exam_id', examId)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return res.status(409).json({ error: 'Você já realizou esta prova.' });
+    }
+
+    const schoolData = await getSchoolData();
+    const exam = (schoolData.exams || []).find(e => e.id === examId);
+    if (!exam) return res.status(404).json({ error: 'Prova não encontrada.' });
+
+    // Grade the exam
+    const totalQuestions = exam.questions.length;
+    let correctCount = 0;
+
+    for (const q of exam.questions) {
+      const studentAnswer = answers[q.id];
+      if (studentAnswer !== undefined && studentAnswer === q.correctOptionIndex) {
+        correctCount++;
+      }
+    }
+
+    const wrongCount = totalQuestions - correctCount;
+    const percentage = totalQuestions > 0 ? parseFloat(((correctCount / totalQuestions) * 100).toFixed(2)) : 0;
+    const finalScore = totalQuestions > 0 ? parseFloat(((correctCount / totalQuestions) * 10).toFixed(2)) : 0;
+
+    const submission = {
+      aluno_id: req.user.studentId,
+      exam_id: examId,
+      total_questions: totalQuestions,
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      percentage,
+      final_score: finalScore,
+      answers_json: answers,
+      created_at: new Date().toISOString(),
+    };
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('provas_submissoes')
+      .insert([submission])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    res.json({
+      success: true,
+      result: {
+        total_questions: totalQuestions,
+        correct_count: correctCount,
+        wrong_count: wrongCount,
+        percentage,
+        final_score: finalScore,
+      }
+    });
+  } catch (err) {
+    console.error('Submissao error:', err);
+    res.status(500).json({ error: 'Erro interno ao submeter prova.' });
+  }
+});
+
+// ===================================================
 // SERVE FRONTEND (Production)
 // ===================================================
 const distPath = path.join(__dirname, 'dist');

@@ -160,3 +160,40 @@ export interface Notification {
   read: boolean;
   createdAt: string; // ISO string
 }
+
+// ==========================================
+// Avaliações (Exams)
+// ==========================================
+
+export interface ExamQuestion {
+  id: string;
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+}
+
+export interface Exam {
+  id: string;
+  title: string;
+  description?: string;
+  classId: string;
+  courseId?: string;
+  durationMinutes: number;
+  questions: ExamQuestion[];
+  status: 'draft' | 'published' | 'archived';
+  createdAt: string;
+  dueDate?: string;
+}
+
+export interface ExamSubmission {
+  id?: string;
+  aluno_id: string;
+  exam_id: string;
+  total_questions: number;
+  correct_count: number;
+  wrong_count: number;
+  percentage: number;
+  final_score: number;
+  answers_json: Record<string, number>;
+  created_at?: string;
+}
