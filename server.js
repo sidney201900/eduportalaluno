@@ -644,13 +644,15 @@ app.post('/api/portal/avaliacoes/submeter', authMiddleware, async (req, res) => 
       created_at: new Date().toISOString(),
     };
 
-    const { data: inserted, error: insertError } = await supabase
+    // Salvar no Supabase (obrigatório)
+    const { error: insertError } = await supabase
       .from('provas_submissoes')
-      .insert([submission])
-      .select()
-      .single();
+      .insert([submission]);
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error('❌ ERRO SUPABASE:', insertError);
+      throw new Error(`Erro no banco de dados: ${insertError.message}`);
+    }
 
     res.json({
       success: true,

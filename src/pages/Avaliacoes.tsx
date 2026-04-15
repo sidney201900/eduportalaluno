@@ -36,6 +36,26 @@ export default function Avaliacoes() {
   const [result, setResult] = useState<ExamResult | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // In-app modal state (replaces native alert/confirm)
+  const [modalMsg, setModalMsg] = useState('');
+  const [modalType, setModalType] = useState<'info' | 'error' | 'confirm'>('info');
+  const [showModal, setShowModal] = useState(false);
+  const [confirmCallback, setConfirmCallback] = useState<(() => void) | null>(null);
+
+  const showAppAlert = (msg: string, type: 'info' | 'error' = 'info') => {
+    setModalMsg(msg);
+    setModalType(type);
+    setConfirmCallback(null);
+    setShowModal(true);
+  };
+
+  const showAppConfirm = (msg: string, onConfirm: () => void) => {
+    setModalMsg(msg);
+    setModalType('confirm');
+    setConfirmCallback(() => onConfirm);
+    setShowModal(true);
+  };
+
   // Fetch exams
   const fetchExams = useCallback(async () => {
     if (!token) return;
@@ -116,14 +136,14 @@ export default function Avaliacoes() {
       if (data.success) {
         setResult(data.result);
         setView('result');
-        fetchExams(); // Refresh submissions
+        fetchExams();
       } else {
-        alert(data.error || 'Erro ao enviar prova.');
+        showAppAlert(data.error || 'Erro ao enviar prova.', 'error');
         if (!autoSubmit) setView('listing');
       }
     } catch (err) {
       console.error(err);
-      alert('Erro de conexão ao enviar prova.');
+      showAppAlert('Erro de conexão ao enviar prova.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -356,9 +376,13 @@ export default function Avaliacoes() {
             <button
               onClick={() => {
                 if (answeredCount < totalQ) {
-                  if (!confirm(`Você respondeu ${answeredCount} de ${totalQ} questões. Deseja finalizar mesmo assim?`)) return;
+                  showAppConfirm(
+                    `Você respondeu ${answeredCount} de ${totalQ} questões. Deseja finalizar mesmo assim?`,
+                    () => handleSubmit()
+                  );
+                } else {
+                  handleSubmit();
                 }
-                handleSubmit();
               }}
               disabled={submitting}
               style={{
@@ -376,6 +400,80 @@ export default function Avaliacoes() {
             </button>
           )}
         </div>
+
+        {/* In-App Modal */}
+        {showModal && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 99999,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '1rem',
+          }}>
+            <div className="glass-card animate-scale-in" style={{
+              maxWidth: 400, width: '100%', padding: '2rem', textAlign: 'center',
+              background: 'var(--color-surface)',
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', margin: '0 auto 1rem',
+                background: modalType === 'error' ? 'var(--bg-danger-alpha)' : modalType === 'confirm' ? 'var(--bg-warning-alpha)' : 'var(--bg-primary-alpha)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {modalType === 'error'
+                  ? <XCircle size={28} color="var(--color-danger)" />
+                  : modalType === 'confirm'
+                  ? <AlertTriangle size={28} color="var(--color-warning)" />
+                  : <CheckCircle2 size={28} color="var(--color-primary)" />
+                }
+              </div>
+              <p style={{ fontSize: '0.9rem', fontWeight: 500, marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                {modalMsg}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                {modalType === 'confirm' ? (
+                  <>
+                    <button
+                      onClick={() => setShowModal(false)}
+                      style={{
+                        flex: 1, padding: '0.65rem', borderRadius: 10,
+                        border: '1px solid var(--glass-border)',
+                        background: 'var(--color-surface-light)',
+                        color: 'var(--color-text)', fontWeight: 600,
+                        cursor: 'pointer', fontSize: '0.85rem',
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => { setShowModal(false); confirmCallback?.(); }}
+                      style={{
+                        flex: 1, padding: '0.65rem', borderRadius: 10,
+                        border: 'none',
+                        background: 'var(--color-success)',
+                        color: 'white', fontWeight: 700,
+                        cursor: 'pointer', fontSize: '0.85rem',
+                      }}
+                    >
+                      Sim, Finalizar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setShowModal(false)}
+                    style={{
+                      width: '100%', padding: '0.65rem', borderRadius: 10,
+                      border: 'none',
+                      background: 'var(--color-primary)',
+                      color: 'white', fontWeight: 700,
+                      cursor: 'pointer', fontSize: '0.85rem',
+                    }}
+                  >
+                    OK
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
